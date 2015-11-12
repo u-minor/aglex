@@ -1,0 +1,36 @@
+{
+  "name": "aglex",
+  "version": "0.0.1",
+  "description": "API Gateway + Lambda + Express development tool",
+  "bin": {
+    "aglex": "bin/aglex.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/u-minor/aglex.git"
+  },
+  "keywords": [
+    "aws",
+    "apigateway",
+    "lambda",
+    "express",
+    "api",
+    "rest"
+  ],
+  "author": "Minoru Nakata <minoru@sprocket.bz>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/u-minor/aglex/issues"
+  },
+  "homepage": "https://github.com/u-minor/aglex#readme",
+  "dependencies": {
+    "aws-sdk": "^2.2.15",
+    "colors": "^1.1.2",
+    "debug": "^2.2.0",
+    "js-yaml": "^3.4.3",
+    "lodash": "^3.10.1",
+    "q": "^1.4.1",
+    "winston": "^2.1.0",
+    "yargs": "^3.29.0"
+  }
+}
