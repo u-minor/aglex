@@ -5,6 +5,7 @@
   "bin": {
     "aglex": "bin/aglex.js"
   },
+  "main": "lib",
   "repository": {
     "type": "git",
     "url": "git://github.com/u-minor/aglex.git"

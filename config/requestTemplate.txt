@@ -1,0 +1,23 @@
+{
+  "method": "$context.httpMethod",
+  "remoteAddr": "$context.identity.sourceIp",
+  "stage": "$context.stage",
+  "path": "$context.resourcePath",
+  "headers": {
+#foreach ($key in $input.params().header.keySet())
+    "$key": "$util.escapeJavaScript($input.params().header.get($key))",
+#end
+    "User-Agent": "$context.identity.userAgent"
+  },
+  "pathParams": {
+#foreach ($key in $input.params().path.keySet())
+    "$key": "$util.escapeJavaScript($input.params().path.get($key))"#if ($foreach.hasNext),#end
+#end
+  },
+  "queryParams": {
+#foreach ($key in $input.params().querystring.keySet())
+    "$key": "$util.escapeJavaScript($input.params().querystring.get($key))"#if ($foreach.hasNext),#end
+#end
+  },
+  "body": $input.json('$')
+}
