@@ -1,0 +1,58 @@
+#### aglex config
+
+## AWS credential and region
+config:
+  ## Profile name for AWS CLI (see: AWS.SharedIniFileCredentials)
+  # profile: prod
+
+  ## You can also specify accessKeyId/secretAccessKey
+  # accessKeyId: YOUR_AWS_ACCESS_KEY
+  # secretAccessKey: YOUR_AWS_SECRET_KEY
+
+  # Region name for AWS (e.g. us-east-1)
+  region: us-east-1
+
+## Lambda configuration
+lambda:
+  Handler: lambda.handler
+  MemorySize: 128
+  Timeout: 60
+  FunctionName: YOUR_LAMBDA_FUNCTION_NAME
+  Description: YOUR_LAMBDA_DESCRIPTION
+  RoleName: YOUR_LAMBDA_EXECUTION_ROLE # Role ARN will generate from RoleName automatically
+
+## API Gateway configuration
+apiGateway:
+  name: YOUR_API_NAME
+  description: YOUR_API_DESCRIPTION
+
+  ## Method template definitions for each httpMethod
+  methodDefinitions:
+    _DEFAULT_:
+      request:
+        type: Lambda
+      responses:
+        200:
+          responseHeaders: &defaultHeaders
+            Access-Control-Allow-Origin: "'*'"
+    OPTIONS:
+      request:
+        type: MOCK
+        requestTemplates:
+          application/json: '{"statusCode": 200}'
+      responses:
+        200:
+          responseHeaders:
+            <<: *defaultHeaders
+            Access-Control-Max-Age: "'86400'"
+            Access-Control-Allow-Headers: "'Origin, Authorization, Accept, Content-Type'"
+            Access-Control-Allow-Methods: "'POST, GET, PUT, DELETE, OPTIONS'"
+
+  ## API resources
+  resources:
+    /path/to/static/endpoint:
+      - GET
+    /path/to/dynamic/endpoint/{param}:
+      - GET
+      - PUT
+      - OPTIONS

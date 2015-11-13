@@ -5,7 +5,27 @@ var debug = require('debug')('aglex.bin');
 var yaml = require('js-yaml');
 var yargs = require('yargs')
   .usage('Usage: $0 <command> ... [options]')
-  .command('apigateway', 'command for API Gateway', function(yargs) {
+  .command('generate', 'Commands to generate something', function(yargs) {
+    argv = yargs
+      .usage('Usage: $0 generate <subcommand> [options]')
+      .command('config', 'Generate configuration yaml template', function(yargs) {
+        argv = yargs
+          .usage('Usage: $0 generate config')
+          .help('help').alias('help', 'h')
+          .argv;
+      })
+      .command('lambda-handler', 'Generate lambda handler code', function(yargs) {
+        argv = yargs
+          .usage('Usage: $0 generate lambda-handler [options]')
+          .option('coffee', {demand: false, describe: 'Generate CoffeeScript code'})
+          .help('help').alias('help', 'h')
+          .argv;
+      })
+      .option('config', {alias: 'c', demand: true, nargs: 1, type: 'string', describe: 'YAML config file'})
+      .help('help').alias('help', 'h')
+      .argv;
+  })
+  .command('apigateway', 'Commands for API Gateway', function(yargs) {
     argv = yargs
       .usage('Usage: $0 apigateway <subcommand> [options]')
       .command('update', 'Create/update API')
@@ -43,6 +63,9 @@ var yargs = require('yargs')
 var argv = yargs.argv;
 
 var config = (function(file) {
+  if (!file) {
+    return '';
+  }
   var data, cwd = process.cwd();
   process.chdir(path.dirname(argv.config));
   data = yaml.safeLoad(fs.readFileSync(path.basename(argv.config), 'utf8'));
@@ -53,6 +76,18 @@ var config = (function(file) {
 var aglex = require('../lib/aglex')(config, 'info');
 
 switch (argv._[0]) {
+  case 'generate':
+    switch (argv._[1]) {
+      case 'config':
+        console.log(aglex.generateConfig());
+        break;
+      case 'lambda-handler':
+        console.log(aglex.generateLambdaHandler(argv.coffee));
+        break;
+      default:
+        yargs.showHelp();
+    }
+    break;
   case 'apigateway':
     switch (argv._[1]) {
       case 'update':
