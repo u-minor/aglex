@@ -15,6 +15,7 @@ config:
 ## Lambda configuration
 lambda:
   Handler: lambda.handler
+  Runtime: nodejs4.3
   MemorySize: 128
   Timeout: 60
   FunctionName: YOUR_LAMBDA_FUNCTION_NAME
