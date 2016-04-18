@@ -120,7 +120,7 @@ Here is the simple gulpfile example.
 - `gulp updateApi --env={env}` to create/update API definitions.
 - `gulp deployApi --env={env}` to deploy API.
 
-```gulpfile.coffee
+```coffee-script
 fs = require 'fs'
 gulp = require 'gulp'
 gutil = require 'gulp-util'
