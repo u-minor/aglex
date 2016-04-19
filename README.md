@@ -124,7 +124,6 @@ Here is the simple gulpfile example.
 fs = require 'fs'
 gulp = require 'gulp'
 gutil = require 'gulp-util'
-gls = require 'gulp-live-server'
 coffee = require 'gulp-coffee'
 argv = require('yargs').argv
 yaml = require 'js-yaml'
@@ -139,6 +138,7 @@ specFiles = ['test/**/*.spec.coffee']
 watching = false
 
 gulp.task 'serve', ->
+  gls = require 'gulp-live-server'
   server = gls 'src/www.coffee', env: {NODE_ENV: 'staging'}
   server.start 'node_modules/coffee-script/bin/coffee'
 
