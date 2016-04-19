@@ -149,7 +149,7 @@ gulp.task 'serve', ->
 gulp.task 'build', ->
   runSequence = require 'run-sequence'
 
-  runSequence 'clean', 'lambda'
+  runSequence 'clean', 'updateLambda'
 
 gulp.task 'clean', (done) ->
   del = require 'del'
