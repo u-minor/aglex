@@ -111,7 +111,9 @@ This tool provides following features.
 
 ## using with gulp
 
-Here is the simple gulpfile example.
+For an example of a project gulpfile.js in JavaScript, see [./examples/gulpfile.js](examples/gulpfile.js);
+
+Below is the simple gulpfile example using CoffeeScript.
 
 - create `aglex-{env}.yml` for each env.
 - use [node-config](https://www.npmjs.com/package/config) to switch env.
