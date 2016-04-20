@@ -2,7 +2,7 @@
 
 // See gulp help for overview of commands.
 // Requires added the following modules to your dependencies:
-//    del, aglex, yargs, gulp-help, run-sequence, config, gulp-rename, gulp-zip
+//    del, aglex, yargs, gulp-help, run-sequence, config, gulp-rename, gulp-zip, gulp-live-server
 
 var fs = require('fs');
 var del = require('del');
@@ -16,8 +16,21 @@ var runSequence = require('run-sequence');
 
 process.env.NODE_ENV = argv.env;
 
-// Load config from config/production.yml
+// Load config from config/
 var config = require('config');
+
+var sourceFiles = ['app.js', 'config/*', 'public/**', 'routes/**'];
+
+gulp.task('serve', 'Start a local development server', () => {
+  var gls = require('gulp-live-server');
+  var server = gls.new('bin/www', {env: {NODE_ENV: 'staging'}});
+  server.start();
+
+  gulp.watch(sourceFiles, () => {
+    console.log("restart server");
+    server.start.bind(server)();
+  });
+});
 
 gulp.task('build', 'clean and updateLambda', () => runSequence('clean','updateLambda'))
 
