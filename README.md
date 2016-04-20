@@ -111,7 +111,9 @@ This tool provides following features.
 
 ## using with gulp
 
-Here is the simple gulpfile example.
+For an example of a project gulpfile.js in JavaScript, see [./examples/gulpfile.js](examples/gulpfile.js);
+
+Below is the simple gulpfile example using CoffeeScript.
 
 - create `aglex-{env}.yml` for each env.
 - use [node-config](https://www.npmjs.com/package/config) to switch env.
@@ -124,7 +126,6 @@ Here is the simple gulpfile example.
 fs = require 'fs'
 gulp = require 'gulp'
 gutil = require 'gulp-util'
-gls = require 'gulp-live-server'
 coffee = require 'gulp-coffee'
 argv = require('yargs').argv
 yaml = require 'js-yaml'
@@ -139,6 +140,7 @@ specFiles = ['test/**/*.spec.coffee']
 watching = false
 
 gulp.task 'serve', ->
+  gls = require 'gulp-live-server'
   server = gls 'src/www.coffee', env: {NODE_ENV: 'staging'}
   server.start 'node_modules/coffee-script/bin/coffee'
 
@@ -149,7 +151,7 @@ gulp.task 'serve', ->
 gulp.task 'build', ->
   runSequence = require 'run-sequence'
 
-  runSequence 'clean', 'lambda'
+  runSequence 'clean', 'updateLambda'
 
 gulp.task 'clean', (done) ->
   del = require 'del'
