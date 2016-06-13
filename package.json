@@ -26,12 +26,12 @@
   "homepage": "https://github.com/u-minor/aglex#readme",
   "dependencies": {
     "aws-sdk": "^2.2.15",
+    "bluebird": "^3.4.0",
     "coffee-script": "^1.10.0",
     "colors": "^1.1.2",
     "debug": "^2.2.0",
     "js-yaml": "^3.4.3",
     "lodash": "^3.10.1",
-    "q": "^1.4.1",
     "winston": "^2.1.0",
     "yargs": "^3.29.0"
   }
