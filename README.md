@@ -1,8 +1,14 @@
 # aglex: APIGateway Lambda Express
 
-Aglex is a support tool for building serverless web applications using [Amazon API Gateway](https://aws.amazon.com/api-gateway/), [AWS Lambda](https://aws.amazon.com/lambda/) and [Express](http://expressjs.com/).
+Aglex is a support tool for building serverless web applications using [Amazon API Gateway], [AWS Lambda] and [Express].
 
-Express is the most famous web framework for Node.js.
+[![Build Status][npm-img]][npm-url]
+[![Build Status][travis-img]][travis-url]
+[![Coverage Status][coveralls-img]][coveralls-url]
+[![Dependency Status][gemnasium-img]][gemnasium-url]
+[![bitHound Code][bithound-img]][bithound-url]
+
+[Express] is the most famous web framework for [Node.js].
 You can use the same way to develop your API Gateway-Lambda web app.
 
 This tool provides following features.
@@ -269,3 +275,18 @@ gulp.task 'coverage:ci', ->
 gulp.task 'test', ['coverage']
 gulp.task 'test:ci', ['coverage:ci']
 ```
+
+[npm-img]: https://img.shields.io/npm/v/aglex.svg
+[npm-url]: https://npmjs.org/package/aglex
+[travis-img]: https://img.shields.io/travis/u-minor/aglex/master.svg
+[travis-url]: https://travis-ci.org/u-minor/aglex
+[coveralls-img]: https://img.shields.io/coveralls/u-minor/aglex/master.svg
+[coveralls-url]: https://coveralls.io/r/u-minor/aglex?branch=master
+[gemnasium-img]: https://img.shields.io/gemnasium/u-minor/aglex.svg
+[gemnasium-url]: https://gemnasium.com/u-minor/aglex
+[bithound-img]: https://img.shields.io/bithound/code/github/u-minor/aglex.svg
+[bithound-url]: https://www.bithound.io/github/u-minor/aglex
+[Amazon API Gateway]: https://aws.amazon.com/api-gateway/
+[AWS Lambda]: https://aws.amazon.com/lambda/
+[Express]: http://expressjs.com/
+[Node.js]: https://nodejs.org/
