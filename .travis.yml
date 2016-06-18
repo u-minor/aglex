@@ -1,0 +1,11 @@
+language: node_js
+node_js:
+  - "0.12"
+  - "4.4"
+  - "5.11"
+  - "6.1"
+sudo: false
+cache:
+  directories:
+    - node_modules
+script: "npm run-script test-ci"
