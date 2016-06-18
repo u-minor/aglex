@@ -9,3 +9,4 @@ cache:
   directories:
     - node_modules
 script: "npm run-script test-ci"
+after_script: "npm i coveralls && cat ./coverage/lcov.info | coveralls"
