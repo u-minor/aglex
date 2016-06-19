@@ -121,8 +121,8 @@ describe('aglex', () => {
   describe('getApiStages', () => {
     const aglex = Aglex({key: 'val'}, 'none')
     const stub = sinon.stub().returns(Promise.resolve([
-      {stageName: 'stage1', description: 'stage1 desc'},
-      {stageName: 'stage2', description: 'stage2 desc'}
+      {stageName: 'stage1', description: 'stage1 desc', invokeUrl: 'http://test.api/stage1'},
+      {stageName: 'stage2', description: 'stage2 desc', invokeUrl: 'http://test.api/stage2'}
     ]))
 
     before(() => {
@@ -149,10 +149,10 @@ describe('aglex', () => {
       const ret = aglex.getApiStages()
 
       expect(ret).to.be.an.instanceof(Promise)
-      expect(ret).to.become({
-        stage1: 'stage1 desc',
-        stage2: 'stage2 desc'
-      })
+      expect(ret).to.become([
+        {stageName: 'stage1', description: 'stage1 desc', invokeUrl: 'http://test.api/stage1'},
+        {stageName: 'stage2', description: 'stage2 desc', invokeUrl: 'http://test.api/stage2'}
+      ])
     })
   })
 
