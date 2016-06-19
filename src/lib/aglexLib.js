@@ -469,12 +469,11 @@ class AglexLib {
     .then(lambda => {
       logger.info(`found lambda ${lambda.Configuration.FunctionName} ${lambda.Configuration.FunctionArn}`)
       const accountId = lambda.Configuration.FunctionArn.split(':')[4]
-      return Promise.all([
-        this.lambda.removePermissionAsyncB({
-          FunctionName: this.config.lambda.FunctionName,
-          StatementId: 'ExecuteFromApiGateway'
-        })
-      ])
+      return this.lambda.removePermissionAsyncB({
+        FunctionName: this.config.lambda.FunctionName,
+        StatementId: 'ExecuteFromApiGateway'
+      })
+      .then(() => {}, () => {})
       .then(() => this.lambda.addPermissionAsyncB({
         FunctionName: this.config.lambda.FunctionName,
         Principal: 'apigateway.amazonaws.com',
