@@ -16,6 +16,11 @@ const AWS = {
   },
 
   APIGateway: class {
+    constructor () {
+      this.config = {
+        region: 'us-east-1'
+      }
+    }
     createDeploymentAsync () {}
     createResourceAsync () {}
     createRestApiAsync () {}

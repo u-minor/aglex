@@ -5,11 +5,12 @@ const debug = Debug('aglex.apiGateway.restApi')
 
 import {resource} from './resource'
 import {deployment} from './deployment'
-import {Stage} from './stage'
+import {stage} from './stage'
 
 export const restApi = api => {
   const Resource = resource(api)
   const Deployment = deployment(api)
+  const Stage = stage(api)
 
   class RestApi {
     constructor (data) {

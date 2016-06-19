@@ -118,10 +118,10 @@ switch (argv._[0]) {
         break
       case 'stages':
         console.log('Getting stage info for API ...')
-        aglex.getApiStages().then(data => {
-          _.forEach(data, (val, key) => {
-            console.log(`${key}: ${val}`)
-          })
+        aglex.getApiStages().then(stages => {
+          for (let stage of stages) {
+            console.log(`${stage.stageName}: ${stage.description} (${stage.invokeUrl})`)
+          }
           console.log('Completed.')
         }, err => {
           debug(err)

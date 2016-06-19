@@ -11,9 +11,9 @@ target.__Rewire__('method', () => stub.method)
 describe('resource', () => {
   const apiGateway = new AWS.APIGateway()
   const RestApi = class {}
-  const api = new RestApi()
+  const restApi = new RestApi()
   const Resource = lib.resource(apiGateway)
-  const res = new Resource(api, {
+  const res = new Resource(restApi, {
     id: '12345abcde',
     path: '/',
     resourceMethods: {
@@ -39,7 +39,7 @@ describe('resource', () => {
   describe('Resource.create', () => {
     it('should return promise object', () => {
       sb.stub(apiGateway, 'createResourceAsync').returns(new Promise(() => {}))
-      const ret = Resource.create(api, {path: '/'})
+      const ret = Resource.create(restApi, {path: '/'})
 
       expect(ret).to.be.an.instanceof(Promise)
     })
@@ -49,7 +49,7 @@ describe('resource', () => {
         id: '12345abcde',
         path: '/'
       }))
-      const ret = Resource.create(api, {path: '/'})
+      const ret = Resource.create(restApi, {path: '/'})
 
       ret.done((data) => check(done, () => {
         expect(data).to.deep.equal({
@@ -63,7 +63,7 @@ describe('resource', () => {
 
   describe('constructor', () => {
     it('should generate a valid object', () => {
-      expect(res._restApi).to.equal(api)
+      expect(res._restApi).to.equal(restApi)
       expect(res).to.have.property('id', '12345abcde')
       expect(res).to.have.property('path', '/')
     })

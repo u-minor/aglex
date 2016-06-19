@@ -22,13 +22,6 @@ class Aglex {
     debug('getApiStages called')
     const lib = aglexLib(this.config, this.logLevel)
     return lib.getApiStages()
-    .then(stages => {
-      const data = {}
-      for (let stage of stages) {
-        data[stage.stageName] = stage.description
-      }
-      return data
-    })
   }
 
   updateApi () {

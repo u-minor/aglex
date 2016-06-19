@@ -398,6 +398,7 @@ class AglexLib {
         logger.info((`cannot find api ${this.config.apiGateway.name}`).red)
         throw new Error('Error')
       }
+      logger.info(`found restApi ${api.name} ${api.id}`)
       return api.stages()
     }, err => {
       logger.info((err.toString()).red)
