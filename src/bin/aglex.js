@@ -113,7 +113,7 @@ switch (argv._[0]) {
           console.log('Completed.')
         }, err => {
           debug(err)
-          console.log('Failed.')
+          process.exit(1)
         })
         break
       case 'stages':
@@ -125,7 +125,7 @@ switch (argv._[0]) {
           console.log('Completed.')
         }, err => {
           debug(err)
-          console.log('Failed.')
+          process.exit(1)
         })
         break
       case 'update':
@@ -134,7 +134,7 @@ switch (argv._[0]) {
           console.log('Completed.')
         }, err => {
           debug(err)
-          console.log('Failed.')
+          process.exit(1)
         })
         break
       default:
@@ -149,7 +149,7 @@ switch (argv._[0]) {
           console.log('Completed.')
         }, err => {
           debug(err)
-          console.log('Failed.')
+          process.exit(1)
         })
         break
       case 'add-permission':
@@ -158,7 +158,7 @@ switch (argv._[0]) {
           console.log('Completed.')
         }, err => {
           debug(err)
-          console.log('Failed.')
+          process.exit(1)
         })
         break
       default:

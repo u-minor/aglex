@@ -356,11 +356,15 @@ class AglexLib {
         logger.info((`cannot find api ${this.config.apiGateway.name}`).red)
         throw new Error('Error')
       }
+      logger.info(`found restApi ${api.name} ${api.id}`)
       return api.createDeployment({
         stageName,
         description,
         stageDescription
       })
+    }, err => {
+      logger.info((err.toString()).red)
+      throw err
     })
   }
 
@@ -379,6 +383,9 @@ class AglexLib {
         name: this.config.apiGateway.name,
         description: this.config.apiGateway.description
       })
+    }, err => {
+      logger.info((err.toString()).red)
+      throw err
     })
   }
 
@@ -392,6 +399,9 @@ class AglexLib {
         throw new Error('Error')
       }
       return api.stages()
+    }, err => {
+      logger.info((err.toString()).red)
+      throw err
     })
   }
 
@@ -407,7 +417,7 @@ class AglexLib {
       this.lambdaFunction = lambda
       return lambda
     }, err => {
-      logger.info((`cannot find lambda ${this.config.lambda.FunctionName}`).red)
+      logger.info((err.toString()).red)
       throw err
     })
   }
@@ -455,7 +465,7 @@ class AglexLib {
         return this.lambda.createFunctionAsyncB(params)
       })
     }, err => {
-      logger.info((err.message).red)
+      logger.info((err.toString()).red)
       throw err
     })
   }
@@ -482,7 +492,7 @@ class AglexLib {
         SourceArn: `arn:aws:execute-api:${this.lambda.config.region}:${accountId}:*`
       }))
     }, err => {
-      logger.info((`cannot find lambda ${this.config.lambda.FunctionName}`).red)
+      logger.info((err.toString()).red)
       throw err
     })
   }
