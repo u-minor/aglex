@@ -1,4 +1,4 @@
-import { AWS, Promise, check, expect, sinon } from '../helper'
+import { AWS, Promise, expect, sinon } from '../helper'
 import * as lib from '../../src/lib/apiGateway/integrationResponse'
 
 describe('integrationResponse', () => {
@@ -42,23 +42,23 @@ describe('integrationResponse', () => {
   describe('IntegrationResponse.create', () => {
     it('should return promise object', () => {
       sb.stub(apiGateway, 'putIntegrationResponseAsync')
-        .returns(new Promise(() => {}))
+        .resolves()
       const ret = IntegrationResponse.create(integration, {statusCode: '200'})
 
       expect(ret).to.be.an.instanceof(Promise)
     })
 
-    it('should resolve with new IntegrationResponse object', (done) => {
+    it('should resolve with new IntegrationResponse object', () => {
       sb.stub(apiGateway, 'putIntegrationResponseAsync')
-        .returns(Promise.resolve({statusCode: '200'}))
+        .resolves({statusCode: '200'})
       const ret = IntegrationResponse.create(integration, {statusCode: '200'})
 
-      ret.done((data) => check(done, () => {
+      return ret.then(data => {
         expect(data).to.deep.equal({
           _integration: integration,
           statusCode: '200'
         })
-      }))
+      })
     })
   })
 
@@ -72,7 +72,7 @@ describe('integrationResponse', () => {
   describe('delete', () => {
     it('should return promise object', () => {
       sb.stub(apiGateway, 'deleteIntegrationResponseAsync')
-        .returns(new Promise(() => {}))
+        .resolves()
       const ret = integrationResponse.delete({})
 
       expect(ret).to.be.an.instanceof(Promise)
@@ -82,24 +82,27 @@ describe('integrationResponse', () => {
   describe('update', () => {
     it('should return promise object', () => {
       sb.stub(apiGateway, 'deleteIntegrationResponseAsync')
-        .returns(new Promise(() => {}))
+        .resolves()
+      sb.stub(apiGateway, 'putIntegrationResponseAsync')
+        .resolves({'200': {}})
       const ret = integrationResponse.update({})
 
       expect(ret).to.be.an.instanceof(Promise)
+      return ret
     })
 
-    it('should delete old data and create new data', (done) => {
+    it('should delete old data and create new data', () => {
       sb.stub(apiGateway, 'deleteIntegrationResponseAsync')
-        .returns(Promise.resolve())
+        .resolves()
       sb.stub(apiGateway, 'putIntegrationResponseAsync')
-        .returns(Promise.resolve({'200': {}}))
+        .resolves({'200': {}})
       const ret = integrationResponse.update({})
 
-      ret.done((data) => check(done, () => {
+      return ret.then(data => {
         expect(data).to.be.an.instanceof(IntegrationResponse)
         expect(apiGateway.deleteIntegrationResponseAsync).to.have.been.calledOnce
         expect(apiGateway.putIntegrationResponseAsync).to.have.been.calledOnce
-      }))
+      })
     })
   })
 })

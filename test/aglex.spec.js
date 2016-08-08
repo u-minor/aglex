@@ -19,7 +19,7 @@ describe('aglex', () => {
 
   describe('addLambdaPermission', () => {
     const aglex = Aglex({key: 'val'}, 'none')
-    const stub = sinon.stub()
+    const stub = sinon.stub().returns(new Promise(() => {}))
 
     before(() => {
       lib.returns({addLambdaPermission: stub})
@@ -42,7 +42,6 @@ describe('aglex', () => {
     })
 
     it('should return a promise object', () => {
-      stub.returns(Promise.resolve())
       const ret = aglex.addLambdaPermission()
 
       expect(ret).to.be.an.instanceof(Promise)
@@ -51,7 +50,7 @@ describe('aglex', () => {
 
   describe('deployApi', () => {
     const aglex = Aglex({key: 'val'}, 'none')
-    const stub = sinon.stub().returns(Promise.resolve())
+    const stub = sinon.stub().returns(new Promise(() => {}))
 
     before(() => {
       lib.returns({deployApi: stub})
@@ -120,10 +119,10 @@ describe('aglex', () => {
 
   describe('getApiStages', () => {
     const aglex = Aglex({key: 'val'}, 'none')
-    const stub = sinon.stub().returns(Promise.resolve([
+    const stub = sinon.stub().resolves([
       {stageName: 'stage1', description: 'stage1 desc', invokeUrl: 'http://test.api/stage1'},
       {stageName: 'stage2', description: 'stage2 desc', invokeUrl: 'http://test.api/stage2'}
-    ]))
+    ])
 
     before(() => {
       lib.returns({getApiStages: stub})
@@ -145,10 +144,9 @@ describe('aglex', () => {
       expect(stub).to.have.been.calledOnce
     })
 
-    it('should return a promise object', () => {
+    it('should resolve with a valid object', () => {
       const ret = aglex.getApiStages()
 
-      expect(ret).to.be.an.instanceof(Promise)
       expect(ret).to.become([
         {stageName: 'stage1', description: 'stage1 desc', invokeUrl: 'http://test.api/stage1'},
         {stageName: 'stage2', description: 'stage2 desc', invokeUrl: 'http://test.api/stage2'}
@@ -161,10 +159,10 @@ describe('aglex', () => {
 
     before(() => {
       lib.returns({
-        checkMethods: sinon.stub().returns(Promise.resolve(null)),
-        checkResources: sinon.stub().returns(Promise.resolve(['res1', 'res2'])),
-        getApi: sinon.stub().returns(Promise.resolve({})),
-        getLambda: sinon.stub().returns(Promise.resolve())
+        checkMethods: sinon.stub().resolves(null),
+        checkResources: sinon.stub().resolves(['res1', 'res2']),
+        getApi: sinon.stub().resolves({}),
+        getLambda: sinon.stub().resolves()
       })
     })
 
@@ -193,7 +191,7 @@ describe('aglex', () => {
 
   describe('updateLambda', () => {
     const aglex = Aglex({key: 'val'}, 'none')
-    const stub = sinon.stub().returns(Promise.resolve())
+    const stub = sinon.stub().returns(new Promise(() => {}))
 
     before(() => {
       lib.returns({updateLambda: stub})

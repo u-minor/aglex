@@ -1,4 +1,4 @@
-import { _, AWS, check, expect, sinon } from './helper'
+import { _, AWS, expect, sinon } from './helper'
 
 import Promise from 'bluebird'
 import AglexLib from '../src/lib/aglexLib'
@@ -112,16 +112,16 @@ describe('aglexLib', () => {
 
     it('should resolve with a valid object', () => {
       sb.stub(AWS._stub_.Lambda, 'getFunctionAsyncB')
-        .returns(Promise.resolve({
+        .resolves({
           Configuration: {
             FunctionArn: 'arn:aws:lambda:local:12345:function:testLambda',
             FunctionName: 'testLambda'
           }
-        }))
+        })
       sb.stub(AWS._stub_.Lambda, 'removePermissionAsyncB')
-        .returns(Promise.resolve())
+        .resolves()
       sb.stub(AWS._stub_.Lambda, 'addPermissionAsyncB')
-        .returns(Promise.resolve({Statement: ''}))
+        .resolves({Statement: ''})
 
       const ret = aglexLib.addLambdaPermission()
 
@@ -130,7 +130,7 @@ describe('aglexLib', () => {
 
     it('should reject if lambda not found', () => {
       sb.stub(AWS._stub_.Lambda, 'getFunctionAsyncB')
-        .returns(Promise.reject(new Error('Function not found')))
+        .rejects(new Error('Function not found'))
 
       const ret = aglexLib.addLambdaPermission()
 
@@ -160,11 +160,11 @@ describe('aglexLib', () => {
 
     it('should return a promise object', () => {
       sb.stub(aglexLib, 'checkIntegrationRequest')
-        .returns(Promise.resolve())
+        .resolves()
       sb.stub(aglexLib, 'checkMethodResponses')
-        .returns(Promise.resolve())
+        .resolves()
       sb.stub(aglexLib, 'checkIntegrationResponses')
-        .returns(Promise.resolve())
+        .resolves()
 
       const ret = aglexLib.checkIntegration({
         httpMethod: 'GET',
@@ -356,8 +356,8 @@ describe('aglexLib', () => {
       expect(ret).to.be.an.instanceof(Promise)
     })
 
-    it('should delete unused method response', (done) => {
-      const func = sinon.stub().returns(Promise.resolve())
+    it('should delete unused method response', () => {
+      const func = sinon.stub().resolves()
       const ret = aglexLib.checkMethodResponses({
         createMethodResponse: () => Promise.resolve(),
         httpMethod: 'GET',
@@ -371,13 +371,13 @@ describe('aglexLib', () => {
         }
       })
 
-      ret.done(() => check(done, () => {
+      return ret.then(() => {
         expect(func).to.have.been.calledOnce
-      }))
+      })
     })
 
-    it('should update method response', (done) => {
-      const func = sinon.stub().returns(Promise.resolve())
+    it('should update method response', () => {
+      const func = sinon.stub().resolves()
       const ret = aglexLib.checkMethodResponses({
         httpMethod: 'GET',
         methodResponses: {
@@ -390,14 +390,14 @@ describe('aglexLib', () => {
         }
       })
 
-      ret.done(() => check(done, () => {
+      return ret.then(() => {
         expect(func).to.have.been.calledOnce
-      }))
+      })
     })
 
-    it('should create new method response', (done) => {
+    it('should create new method response', () => {
       const func = sb.stub(aglexLib, 'createMethodResponses')
-        .returns(Promise.resolve())
+        .resolves()
       const ret = aglexLib.checkMethodResponses({
         httpMethod: 'GET',
         _resource: {
@@ -405,9 +405,9 @@ describe('aglexLib', () => {
         }
       })
 
-      ret.done(() => check(done, () => {
+      return ret.then(() => {
         expect(func).to.have.been.calledOnce
-      }))
+      })
     })
   })
 
@@ -439,22 +439,22 @@ describe('aglexLib', () => {
       expect(ret).to.be.an.instanceof(Promise)
     })
 
-    it('should call deleteMethods, createMethods, checkIntegration', (done) => {
+    it('should call deleteMethods, createMethods, checkIntegration', () => {
       const func1 = sb.stub(aglexLib, 'deleteMethods')
-        .returns(Promise.resolve([{}]))
+        .resolves([{}])
       const func2 = sb.stub(aglexLib, 'createMethods')
-        .returns(Promise.resolve([{}, {}]))
+        .resolves([{}, {}])
       const func3 = sb.stub(aglexLib, 'checkIntegration')
-        .returns(Promise.resolve())
+        .resolves()
 
-      aglexLib.checkMethods({
+      return aglexLib.checkMethods({
         methods: () => Promise.resolve([])
       })
-      .done(() => check(done, () => {
+      .then(() => {
         expect(func1).to.have.been.calledOnce
         expect(func2).to.have.been.calledOnce
         expect(func3).to.have.been.calledTwice
-      }))
+      })
     })
   })
 
@@ -500,13 +500,13 @@ describe('aglexLib', () => {
     it('should delete unused resources', () => {
       const res = sinon.stub()
       res
-        .onFirstCall().returns(Promise.resolve([
+        .onFirstCall().resolves([
           {id: '12345abcde', path: '/'},
           {id: '67890eghij', path: '/dummy', delete: () => {}}
-        ]))
-        .onSecondCall().returns(Promise.resolve([
+        ])
+        .onSecondCall().resolves([
           {id: '12345abcde', path: '/'}
-        ]))
+        ])
       const ret = aglexLib.checkResources({resources: res})
 
       expect(ret).to.become([{id: '12345abcde', path: '/'}])
@@ -516,13 +516,13 @@ describe('aglexLib', () => {
       conf.apiGateway.resources['/dummy'] = [ 'GET' ]
       const res = sinon.stub()
       res
-        .onFirstCall().returns(Promise.resolve([
+        .onFirstCall().resolves([
           {id: '12345abcde', path: '/'}
-        ]))
-        .onSecondCall().returns(Promise.resolve([
+        ])
+        .onSecondCall().resolves([
           {id: '12345abcde', path: '/'},
           {id: '67890eghij', path: '/dummy'}
-        ]))
+        ])
       const ret = aglexLib.checkResources({
         createResource: () => Promise.resolve({}),
         resources: res
@@ -608,18 +608,18 @@ describe('aglexLib', () => {
       expect(ret).to.be.an.instanceof(Promise)
     })
 
-    it('should create new methods', (done) => {
+    it('should create new methods', () => {
       conf.apiGateway.resources['/dummy'] = {GET: {}}
-      const func = sinon.stub().returns(Promise.resolve({}))
+      const func = sinon.stub().resolves({})
       const ret = aglexLib.createMethods({
         createMethod: func,
         path: '/dummy'
       }, [])
 
       expect(ret).to.become([{}])
-      ret.done(() => check(done, () => {
+      return ret.then(() => {
         expect(func).to.have.been.calledOnce
-      }))
+      })
     })
   })
 
@@ -650,18 +650,18 @@ describe('aglexLib', () => {
       expect(ret).to.be.an.instanceof(Promise)
     })
 
-    it('should delete unused methods', (done) => {
+    it('should delete unused methods', () => {
       conf.apiGateway.resources['/dummy'] = {GET: {}}
-      const func = sinon.stub().returns(Promise.resolve())
+      const func = sinon.stub().resolves()
       const ret = aglexLib.deleteMethods({path: '/dummy'}, [
         {httpMethod: 'GET', delete: func},
         {httpMethod: 'POST', delete: func}
       ])
 
       expect(ret).to.become([{httpMethod: 'GET', delete: func}])
-      ret.done(() => check(done, () => {
+      return ret.then(() => {
         expect(func).to.have.been.calledOnce
-      }))
+      })
     })
   })
 
@@ -691,7 +691,7 @@ describe('aglexLib', () => {
     it('should resolve with a valid object', () => {
       stub.findByName = sinon.stub()
         .withArgs('test')
-        .returns(Promise.resolve(apiObj))
+        .resolves(apiObj)
 
       const ret = aglexLib.deployApi('desc', 'stage', 'stage desc')
 
@@ -701,7 +701,7 @@ describe('aglexLib', () => {
     it('should resolve with a new api object', () => {
       stub.findByName = sinon.stub()
         .withArgs('test')
-        .returns(Promise.resolve(null))
+        .resolves(null)
 
       const ret = aglexLib.deployApi('desc', 'stage', 'stage desc')
 
@@ -735,7 +735,7 @@ describe('aglexLib', () => {
     it('should resolve with a current api object', () => {
       stub.findByName = sinon.stub()
         .withArgs('test')
-        .returns(Promise.resolve(apiObj))
+        .resolves(apiObj)
 
       const ret = aglexLib.getApi()
 
@@ -745,10 +745,10 @@ describe('aglexLib', () => {
     it('should resolve with a new api object', () => {
       stub.findByName = sinon.stub()
         .withArgs('test')
-        .returns(Promise.resolve(null))
+        .resolves(null)
       stub.create = sinon.stub()
         .withArgs(conf.apiGateway)
-        .returns(Promise.resolve(apiObj))
+        .resolves(apiObj)
 
       const ret = aglexLib.getApi()
 
@@ -782,7 +782,7 @@ describe('aglexLib', () => {
     it('should resolve with an stage array', () => {
       stub.findByName = sinon.stub()
         .withArgs('test')
-        .returns(Promise.resolve(apiObj))
+        .resolves(apiObj)
 
       const ret = aglexLib.getApiStages()
 
@@ -792,7 +792,7 @@ describe('aglexLib', () => {
     it('should reject if api not found', () => {
       stub.findByName = sinon.stub()
         .withArgs('test')
-        .returns(Promise.resolve(null))
+        .resolves(null)
 
       const ret = aglexLib.getApiStages()
 

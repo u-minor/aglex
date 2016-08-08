@@ -1,14 +1,14 @@
-import { AWS, Promise, check, expect, sinon } from '../helper'
+import { AWS, Promise, expect, sinon } from '../helper'
 import target, * as lib from '../../src/lib/apiGateway/method'
 
 const stub = {
   Integration: class {
-    static create () {}
-    update () {}
+    static create () { return Promise.resolve() }
+    update () { return Promise.resolve() }
   },
   MethodResponse: class {
-    static create () {}
-    update () {}
+    static create () { return Promise.resolve() }
+    update () { return Promise.resolve() }
   }
 }
 target.__Rewire__('integration', () => stub.Integration)
@@ -52,23 +52,23 @@ describe('method', () => {
   describe('Method.create', () => {
     it('should return promise object', () => {
       sb.stub(apiGateway, 'putMethodAsync')
-        .returns(new Promise(() => {}))
+        .resolves()
       const ret = Method.create(resource, {httpMethod: 'GET'})
 
       expect(ret).to.be.an.instanceof(Promise)
     })
 
-    it('should resolve with new Method object', (done) => {
+    it('should resolve with new Method object', () => {
       sb.stub(apiGateway, 'putMethodAsync')
-        .returns(Promise.resolve({httpMethod: 'GET'}))
+        .resolves({httpMethod: 'GET'})
       const ret = Method.create(resource, {httpMethod: 'GET'})
 
-      ret.done((data) => check(done, () => {
+      return ret.then(data => {
         expect(data).to.deep.equal({
           _resource: resource,
           httpMethod: 'GET'
         })
-      }))
+      })
     })
   })
 
@@ -104,64 +104,64 @@ describe('method', () => {
   describe('createIntegration', () => {
     it('should return promise object', () => {
       sb.stub(stub.Integration, 'create')
-        .returns(new Promise(() => {}))
+        .resolves()
       const ret = method.createIntegration({})
 
       expect(ret).to.be.an.instanceof(Promise)
     })
 
-    it('should set methodIntegration after resolved', (done) => {
+    it('should set methodIntegration after resolved', () => {
       sb.stub(stub.Integration, 'create')
-        .returns(Promise.resolve(new stub.Integration()))
+        .resolves(new stub.Integration())
       const ret = method.createIntegration({})
 
-      ret.done(() => check(done, () => {
+      return ret.then(() => {
         expect(method.methodIntegration).to.be.an.instanceof(stub.Integration)
-      }))
+      })
     })
   })
 
   describe('createMethodResponse', () => {
     it('should return promise object', () => {
       sb.stub(stub.MethodResponse, 'create')
-        .returns(new Promise(() => {}))
+        .resolves()
       const ret = method.createMethodResponse({statusCode: '200'})
 
       expect(ret).to.be.an.instanceof(Promise)
     })
 
-    it('should set methodResponses after resolved', (done) => {
+    it('should set methodResponses after resolved', () => {
       sb.stub(stub.MethodResponse, 'create')
-        .returns(Promise.resolve(new stub.MethodResponse()))
+        .resolves(new stub.MethodResponse())
       const ret = method.createMethodResponse({statusCode: '200'})
 
-      ret.done(() => check(done, () => {
+      return ret.then(() => {
         expect(method.methodResponses).to.have.property('200')
         expect(method.methodResponses['200']).to.be.an.instanceof(stub.MethodResponse)
-      }))
+      })
     })
 
-    it('should append new methodResponses to current object', (done) => {
+    it('should append new methodResponses to current object', () => {
       method.methodResponses = {
         '200': new stub.MethodResponse()
       }
       sb.stub(stub.MethodResponse, 'create')
-        .returns(Promise.resolve(new stub.MethodResponse()))
+        .resolves(new stub.MethodResponse())
       const ret = method.createMethodResponse({statusCode: '500'})
 
-      ret.done(() => check(done, () => {
+      return ret.then(() => {
         expect(method.methodResponses).to.have.property('200')
         expect(method.methodResponses['200']).to.be.an.instanceof(stub.MethodResponse)
         expect(method.methodResponses).to.have.property('500')
         expect(method.methodResponses['500']).to.be.an.instanceof(stub.MethodResponse)
-      }))
+      })
     })
   })
 
   describe('delete', () => {
     it('should return promise object', () => {
       sb.stub(apiGateway, 'deleteMethodAsync')
-        .returns(new Promise(() => {}))
+        .resolves()
       const ret = method.delete({})
 
       expect(ret).to.be.an.instanceof(Promise)
@@ -171,11 +171,10 @@ describe('method', () => {
   describe('updateIntegration', () => {
     it('should return promise object', () => {
       method.methodIntegration = new stub.Integration()
-      sb.stub(method.methodIntegration, 'update')
-        .returns(new Promise(() => {}))
       const ret = method.updateIntegration({})
 
       expect(ret).to.be.an.instanceof(Promise)
+      return ret
     })
   })
 
@@ -184,11 +183,10 @@ describe('method', () => {
       method.methodResponses = {
         '200': new stub.MethodResponse()
       }
-      sb.stub(method.methodResponses['200'], 'update')
-        .returns(new Promise(() => {}))
       const ret = method.updateMethodResponse({statusCode: '200'})
 
       expect(ret).to.be.an.instanceof(Promise)
+      return ret
     })
   })
 })

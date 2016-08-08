@@ -1,4 +1,4 @@
-import { AWS, Promise, check, expect, sinon } from '../helper'
+import { AWS, Promise, expect, sinon } from '../helper'
 import * as lib from '../../src/lib/apiGateway/methodResponse'
 
 describe('methodResponse', () => {
@@ -39,23 +39,23 @@ describe('methodResponse', () => {
   describe('MethodResponse.create', () => {
     it('should return promise object', () => {
       sb.stub(apiGateway, 'putMethodResponseAsync')
-        .returns(new Promise(() => {}))
+        .resolves()
       const ret = MethodResponse.create(method, {statusCode: '200'})
 
       expect(ret).to.be.an.instanceof(Promise)
     })
 
-    it('should resolve with new MethodResponse object', (done) => {
+    it('should resolve with new MethodResponse object', () => {
       sb.stub(apiGateway, 'putMethodResponseAsync')
-        .returns(Promise.resolve({statusCode: '200'}))
+        .resolves({statusCode: '200'})
       const ret = MethodResponse.create(method, {statusCode: '200'})
 
-      ret.done((data) => check(done, () => {
+      return ret.then(data => {
         expect(data).to.deep.equal({
           _method: method,
           statusCode: '200'
         })
-      }))
+      })
     })
   })
 
@@ -69,34 +69,36 @@ describe('methodResponse', () => {
   describe('delete', () => {
     it('should return promise object', () => {
       sb.stub(apiGateway, 'deleteMethodResponseAsync')
-        .returns(new Promise(() => {}))
+        .resolves()
       const ret = methodResponse.delete({})
 
       expect(ret).to.be.an.instanceof(Promise)
+      return ret
     })
   })
 
   describe('update', () => {
     it('should return promise object', () => {
       sb.stub(apiGateway, 'deleteMethodResponseAsync')
-        .returns(new Promise(() => {}))
+        .resolves()
       const ret = methodResponse.update({})
 
       expect(ret).to.be.an.instanceof(Promise)
+      return ret
     })
 
-    it('should delete old data and create new data', (done) => {
+    it('should delete old data and create new data', () => {
       sb.stub(apiGateway, 'deleteMethodResponseAsync')
-        .returns(Promise.resolve())
+        .resolves()
       sb.stub(apiGateway, 'putMethodResponseAsync')
-        .returns(Promise.resolve({'200': {}}))
+        .resolves({'200': {}})
       const ret = methodResponse.update({})
 
-      ret.done((data) => check(done, () => {
+      return ret.then(data => {
         expect(data).to.be.an.instanceof(MethodResponse)
         expect(apiGateway.deleteMethodResponseAsync).to.have.been.calledOnce
         expect(apiGateway.putMethodResponseAsync).to.have.been.calledOnce
-      }))
+      })
     })
   })
 })

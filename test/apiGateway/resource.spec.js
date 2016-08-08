@@ -1,9 +1,9 @@
-import { AWS, Promise, check, expect, sinon } from '../helper'
+import { AWS, Promise, expect, sinon } from '../helper'
 import target, * as lib from '../../src/lib/apiGateway/resource'
 
 const stub = {
   method: class {
-    static create () {}
+    static create () { return Promise.resolve() }
   }
 }
 target.__Rewire__('method', () => stub.method)
@@ -38,26 +38,27 @@ describe('resource', () => {
 
   describe('Resource.create', () => {
     it('should return promise object', () => {
-      sb.stub(apiGateway, 'createResourceAsync').returns(new Promise(() => {}))
+      sb.stub(apiGateway, 'createResourceAsync')
+        .resolves()
       const ret = Resource.create(restApi, {path: '/'})
 
       expect(ret).to.be.an.instanceof(Promise)
     })
 
-    it('should resolve with new Resource object', (done) => {
+    it('should resolve with new Resource object', () => {
       sb.stub(apiGateway, 'createResourceAsync').returns(Promise.resolve({
         id: '12345abcde',
         path: '/'
       }))
       const ret = Resource.create(restApi, {path: '/'})
 
-      ret.done((data) => check(done, () => {
+      return ret.then(data => {
         expect(data).to.deep.equal({
           _restApi: {},
           id: '12345abcde',
           path: '/'
         })
-      }))
+      })
     })
   })
 
@@ -71,7 +72,6 @@ describe('resource', () => {
 
   describe('createMethod', () => {
     it('should return promise object', () => {
-      sb.stub(stub.method, 'create').returns(new Promise(() => {}))
       const ret = res.createMethod({})
 
       expect(ret).to.be.an.instanceof(Promise)
@@ -80,7 +80,8 @@ describe('resource', () => {
 
   describe('methods', () => {
     it('should return promise object', () => {
-      sb.stub(apiGateway, 'getMethodAsync').returns(new Promise(() => {}))
+      sb.stub(apiGateway, 'getMethodAsync')
+        .resolves()
       const ret = res.methods()
 
       expect(ret).to.be.an.instanceof(Promise)
@@ -88,18 +89,18 @@ describe('resource', () => {
 
     it('should resolve with method objects', () => {
       const func = sb.stub(apiGateway, 'getMethodAsync')
-      func.onFirstCall().returns(Promise.resolve({
+      func.onFirstCall().resolves({
         httpMethod: 'GET',
         _resource: {
           path: '/dummy'
         }
-      }))
-      func.onSecondCall().returns(Promise.resolve({
+      })
+      func.onSecondCall().resolves({
         httpMethod: 'POST',
         _resource: {
           path: '/dummy'
         }
-      }))
+      })
       const ret = res.methods()
 
       expect(ret).to.eventually.be.an('array')
@@ -109,7 +110,8 @@ describe('resource', () => {
 
   describe('delete', () => {
     it('should return promise object', () => {
-      sb.stub(apiGateway, 'deleteResourceAsync').returns(new Promise(() => {}))
+      sb.stub(apiGateway, 'deleteResourceAsync')
+        .resolves()
       const ret = res.delete({})
 
       expect(ret).to.be.an.instanceof(Promise)

@@ -1,15 +1,14 @@
 import _ from 'lodash'
 import Promise from 'bluebird'
 import chai, {expect} from 'chai'
+import chaiAsPromised from 'chai-as-promised'
 import sinon from 'sinon'
 import sinonChai from 'sinon-chai'
-import chaiAsPromised from 'chai-as-promised'
-import checkChai from 'check-chai'
-chai.use(sinonChai)
-chai.use(chaiAsPromised)
-chai.use(checkChai)
 
-const check = chai.check
+require('sinon-as-promised')(Promise)
+chai.use(chaiAsPromised)
+chai.use(sinonChai)
+
 const AWS = {
   config: {
     update: () => {}
@@ -59,4 +58,4 @@ const AWS = {
   }
 }
 
-export { _, AWS, Promise, check, expect, sinon }
+export { _, AWS, Promise, expect, sinon }

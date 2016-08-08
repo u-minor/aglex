@@ -3,10 +3,10 @@ import target, * as lib from '../../src/lib/apiGateway/restApi'
 
 const stub = {
   deployment: class {
-    static create () {}
+    static create () { return Promise.resolve() }
   },
   resource: class {
-    static create () {}
+    static create () { return Promise.resolve() }
   },
   stage: class {}
 }
@@ -39,7 +39,7 @@ describe('restApi', () => {
   describe('RestApi.create', () => {
     it('should return promise object', () => {
       sb.stub(apiGateway, 'createRestApiAsync')
-        .returns(new Promise(() => {}))
+        .resolves()
       const ret = RestApi.create({name: 'test_api'})
 
       expect(ret).to.be.an.instanceof(Promise)
@@ -47,9 +47,9 @@ describe('restApi', () => {
 
     it('should resolve with new RestApi object', () => {
       sb.stub(apiGateway, 'createRestApiAsync')
-        .returns(Promise.resolve({
+        .resolves({
           name: 'test_api'
-        }))
+        })
       const ret = RestApi.create({name: 'test_api'})
 
       expect(ret).to.become({name: 'test_api'})
@@ -59,7 +59,7 @@ describe('restApi', () => {
   describe('RestApi.findByName', () => {
     it('should return promise object', () => {
       sb.stub(apiGateway, 'getRestApisAsync')
-        .returns(new Promise(() => {}))
+        .resolves({items: []})
       const ret = RestApi.findByName('test_api')
 
       expect(ret).to.be.an.instanceof(Promise)
@@ -67,11 +67,11 @@ describe('restApi', () => {
 
     it('should resolve with RestApi object', () => {
       sb.stub(apiGateway, 'getRestApisAsync')
-        .returns(Promise.resolve({
+        .resolves({
           items: [
             {name: 'test_api'}
           ]
-        }))
+        })
       const ret = RestApi.findByName('test_api')
 
       expect(ret).to.become({name: 'test_api'})
@@ -79,11 +79,11 @@ describe('restApi', () => {
 
     it('should resolve with null if api not found', () => {
       sb.stub(apiGateway, 'getRestApisAsync')
-        .returns(Promise.resolve({
+        .resolves({
           items: [
             {name: 'dummy'}
           ]
-        }))
+        })
       const ret = RestApi.findByName('test_api')
 
       expect(ret).to.become(null)
@@ -99,8 +99,6 @@ describe('restApi', () => {
 
   describe('createDeployment', () => {
     it('should return promise object', () => {
-      sb.stub(stub.deployment, 'create')
-        .returns(new Promise(() => {}))
       const ret = restApi.createDeployment({})
 
       expect(ret).to.be.an.instanceof(Promise)
@@ -109,8 +107,6 @@ describe('restApi', () => {
 
   describe('createResource', () => {
     it('should return promise object', () => {
-      sb.stub(stub.resource, 'create')
-        .returns(new Promise(() => {}))
       const ret = restApi.createResource({})
 
       expect(ret).to.be.an.instanceof(Promise)
@@ -120,7 +116,7 @@ describe('restApi', () => {
   describe('resources', () => {
     it('should return promise object', () => {
       sb.stub(apiGateway, 'getResourcesAsync')
-        .returns(new Promise(() => {}))
+        .resolves({items: []})
       const ret = restApi.resources({})
 
       expect(ret).to.be.an.instanceof(Promise)
@@ -128,12 +124,12 @@ describe('restApi', () => {
 
     it('should resolve with resource objects', () => {
       sb.stub(apiGateway, 'getResourcesAsync')
-        .returns(Promise.resolve({
+        .resolves({
           items: [
             {id: '123abc', path: '/'},
             {id: '456def', path: '/dummy'}
           ]
-        }))
+        })
       const ret = restApi.resources({})
 
       expect(ret).to.eventually.be.an('array')
@@ -144,7 +140,7 @@ describe('restApi', () => {
   describe('stages', () => {
     it('should return promise object', () => {
       sb.stub(apiGateway, 'getStagesAsync')
-        .returns(new Promise(() => {}))
+        .resolves({items: []})
       const ret = restApi.stages({})
 
       expect(ret).to.be.an.instanceof(Promise)
@@ -152,12 +148,12 @@ describe('restApi', () => {
 
     it('should resolve with stage objects', () => {
       sb.stub(apiGateway, 'getStagesAsync')
-        .returns(Promise.resolve({
+        .resolves({
           item: [
             {id: '123abc', stageName: 'stage1'},
             {id: '456def', stageName: 'stage2'}
           ]
-        }))
+        })
       const ret = restApi.stages({})
 
       expect(ret).to.eventually.be.an('array')
