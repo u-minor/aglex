@@ -1,5 +1,6 @@
 import _ from 'lodash'
 import Debug from 'debug'
+import Promise from 'bluebird'
 
 const debug = Debug('aglex.apiGateway.integration')
 
@@ -53,7 +54,8 @@ export const integration = api => {
       restApiId: method._resource._restApi.id
     }, params)
 
-    return api.putIntegrationAsync(obj)
+    return Promise.delay(200)
+    .then(() => api.putIntegrationAsync(obj))
     .then(data => {
       debug(data)
       return new Integration(method, data)

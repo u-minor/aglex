@@ -1,5 +1,6 @@
 import _ from 'lodash'
 import Debug from 'debug'
+import Promise from 'bluebird'
 
 const debug = Debug('aglex.apiGateway.integrationResponse')
 
@@ -25,12 +26,13 @@ export const integrationResponse = api => {
     }
 
     delete () {
-      return api.deleteIntegrationResponseAsync({
+      return Promise.delay(200)
+      .then(() => api.deleteIntegrationResponseAsync({
         httpMethod: this._integration._method.httpMethod,
         resourceId: this._integration._method._resource.id,
         restApiId: this._integration._method._resource._restApi.id,
         statusCode: this.statusCode
-      })
+      }))
     }
   }
 
@@ -41,7 +43,8 @@ export const integrationResponse = api => {
       restApiId: integration._method._resource._restApi.id
     }, params)
 
-    return api.putIntegrationResponseAsync(obj)
+    return Promise.delay(200)
+    .then(() => api.putIntegrationResponseAsync(obj))
     .then(data => {
       debug(data)
       return new IntegrationResponse(integration, data)

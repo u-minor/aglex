@@ -1,5 +1,6 @@
 import _ from 'lodash'
 import Debug from 'debug'
+import Promise from 'bluebird'
 
 const debug = Debug('aglex.apiGateway.methodResponse')
 
@@ -11,12 +12,13 @@ export const methodResponse = api => {
     }
 
     delete () {
-      return api.deleteMethodResponseAsync({
+      return Promise.delay(200)
+      .then(() => api.deleteMethodResponseAsync({
         httpMethod: this._method.httpMethod,
         resourceId: this._method._resource.id,
         restApiId: this._method._resource._restApi.id,
         statusCode: this.statusCode
-      })
+      }))
     }
 
     update (params) {
@@ -41,7 +43,8 @@ export const methodResponse = api => {
       restApiId: method._resource._restApi.id
     }, params)
 
-    return api.putMethodResponseAsync(obj)
+    return Promise.delay(200)
+    .then(() => api.putMethodResponseAsync(obj))
     .then(data => {
       debug(data)
       return new MethodResponse(method, data)
