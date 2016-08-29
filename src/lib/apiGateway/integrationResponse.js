@@ -26,7 +26,7 @@ export const integrationResponse = api => {
     }
 
     delete () {
-      return Promise.delay(200)
+      return Promise.delay(250)
       .then(() => api.deleteIntegrationResponseAsync({
         httpMethod: this._integration._method.httpMethod,
         resourceId: this._integration._method._resource.id,
@@ -43,7 +43,7 @@ export const integrationResponse = api => {
       restApiId: integration._method._resource._restApi.id
     }, params)
 
-    return Promise.delay(200)
+    return Promise.delay(250)
     .then(() => api.putIntegrationResponseAsync(obj))
     .then(data => {
       debug(data)

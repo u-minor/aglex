@@ -20,7 +20,7 @@ export const resource = api => {
     }
 
     delete () {
-      return Promise.delay(200)
+      return Promise.delay(250)
         .then(() => api.deleteResourceAsync({
           resourceId: this.id,
           restApiId: this._restApi.id
@@ -28,11 +28,12 @@ export const resource = api => {
     }
 
     methods () {
+      const methods = []
       let promise = Promise.resolve()
 
       _.forEach(this.resourceMethods, (dummy, method) => {
         promise = promise
-          .then(() => Promise.delay(400))
+          .then(() => Promise.delay(500))
           .then(() => api.getMethodAsync({
             httpMethod: method,
             resourceId: this.id,
@@ -40,11 +41,11 @@ export const resource = api => {
           }))
           .then(data => {
             debug(data)
-            return new Method(this, data)
+            methods.push(new Method(this, data))
           })
       })
 
-      return promise
+      return promise.then(() => methods)
     }
   }
 
@@ -53,7 +54,7 @@ export const resource = api => {
       restApiId: restApi.id
     }, params)
 
-    return Promise.delay(200)
+    return Promise.delay(250)
       .then(() => api.createResourceAsync(obj))
       .then(data => {
         debug(data)

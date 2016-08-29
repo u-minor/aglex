@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 import fs from 'fs'
 import path from 'path'
-import _ from 'lodash'
 import Debug from 'debug'
 import Yargs from 'yargs'
 import yaml from 'js-yaml'

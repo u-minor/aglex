@@ -39,8 +39,8 @@ class AglexLib {
     debug('checkIntegration called - method:%s resource:%s', method.httpMethod, method._resource.path)
 
     return this.checkIntegrationRequest(method)
-    .then(() => this.checkMethodResponses(method))
-    .then(() => this.checkIntegrationResponses(method.methodIntegration))
+      .then(() => this.checkMethodResponses(method))
+      .then(() => this.checkIntegrationResponses(method.methodIntegration))
   }
 
   checkIntegrationRequest (method) {
@@ -49,7 +49,7 @@ class AglexLib {
     debug('checkIntegrationRequest called - method:%s resource:%s', method.httpMethod, method._resource.path)
 
     if (!method.methodIntegration) {
-      logger.info((`create integration request for ${method.httpMethod}:${method._resource.path} ...`).green)
+      logger.info((`create integration request for ${method.httpMethod}:${method._resource.path}`).green)
       return method.createIntegration(integrationConfig)
     }
 
@@ -75,13 +75,12 @@ class AglexLib {
     const method = integration._method
     const resource = method._resource
     const resConfig = this.config.apiGateway.resources[resource.path][method.httpMethod].responses
-    const arr = []
+    let promise = Promise.resolve()
 
     debug('checkIntegrationResponses called - method:%s resource:%s', method.httpMethod, method._resource.path)
 
     if (!integration.integrationResponses) {
       _.forEach(resConfig, (rval, rkey) => {
-        logger.info((`create integration response status:${rkey} for ${method.httpMethod}:${resource.path} ...`).green)
         const resParams = {}
         _.forEach(rval.responseHeaders, (hval, hkey) => {
           resParams[`method.response.header.${hkey}`] = hval
@@ -95,9 +94,12 @@ class AglexLib {
           obj.selectionPattern = rval.selectionPattern
         }
 
-        arr.push(() => integration.createIntegrationResponse(obj))
+        promise = promise.then(() => {
+          logger.info((`create integration response status:${rkey} for ${method.httpMethod}:${resource.path}`).green)
+          return integration.createIntegrationResponse(obj)
+        })
       })
-      return reducePromises(arr)
+      return promise
     }
 
     _.forEach(resConfig, (obj, statusCode) => {
@@ -128,16 +130,18 @@ class AglexLib {
         needUpdate = true
       }
       if (needUpdate) {
-        logger.info((`update integration response status:${statusCode} for ${method.httpMethod}:${resource.path}`).yellow)
-        arr.push(() => ir.update({
-          statusCode,
-          selectionPattern: obj.selectionPattern,
-          responseParameters: resParams,
-          responseTemplates: obj.responseTemplates
-        }))
+        promise = promise.then(() => {
+          logger.info((`update integration response status:${statusCode} for ${method.httpMethod}:${resource.path}`).yellow)
+          return ir.update({
+            statusCode,
+            selectionPattern: obj.selectionPattern,
+            responseParameters: resParams,
+            responseTemplates: obj.responseTemplates
+          })
+        })
       }
     })
-    return reducePromises(arr)
+    return promise
   }
 
   checkMethodResponses (method) {
@@ -149,15 +153,19 @@ class AglexLib {
 
     const resource = method._resource
     const resConfig = this.config.apiGateway.resources[resource.path][method.httpMethod].responses
-    let p = Promise.resolve()
+    let promise = Promise.resolve()
 
     // delete unused methodResponse
     _.forEach(method.methodResponses, (methodResponse, statusCode) => {
       if (!resConfig[statusCode]) {
-        logger.info((`delete method response status:${statusCode} for ${method.httpMethod}:${resource.path} ...`).red)
-        p = p.then(() => methodResponse.delete().then(() => {
-          delete method.methodResponses[statusCode]
-        }))
+        promise = promise
+          .then(() => {
+            logger.info((`delete method response status:${statusCode} for ${method.httpMethod}:${resource.path}`).red)
+            return methodResponse.delete()
+          })
+          .then(() => {
+            delete method.methodResponses[statusCode]
+          })
       }
     })
 
@@ -173,8 +181,8 @@ class AglexLib {
       const methodResponse = method.methodResponses[statusCode]
 
       if (!methodResponse) {
-        p = p.then(() => {
-          logger.info((`create method response status:${statusCode} for ${method.httpMethod}:${resource.path} ...`).green)
+        promise = promise.then(() => {
+          logger.info((`create method response status:${statusCode} for ${method.httpMethod}:${resource.path}`).green)
           return method.createMethodResponse({
             statusCode,
             responseModels: resConfig.responseModels || {'application/json': 'Empty'},
@@ -192,7 +200,7 @@ class AglexLib {
         needUpdate = true
       }
       if (needUpdate) {
-        p = p.then(() => {
+        promise = promise.then(() => {
           logger.info((`update method response status:${statusCode} for ${method.httpMethod}:${resource.path}`).yellow)
           return methodResponse.update({
             statusCode,
@@ -202,45 +210,47 @@ class AglexLib {
         })
       }
     })
-    return p
+    return promise
   }
 
   checkMethods (resource) {
     debug('checkMethods called - resource:%s', resource.path)
 
+    logger.info(`checking methods for ${resource.path}`)
     return resource.methods()
-    .then(methods => this.deleteMethods(resource, methods))
-    .then(methods => this.createMethods(resource, methods))
-    .then(methods => {
-      const arr = []
-      for (let method of methods) {
-        arr.push(() => this.checkIntegration(method))
-      }
-      return reducePromises(arr)
-    })
+      .then(methods => this.deleteMethods(resource, methods))
+      .then(methods => this.createMethods(resource, methods))
+      .then(methods => {
+        let promise = Promise.resolve()
+        for (let method of methods) {
+          promise = promise.then(() => this.checkIntegration(method))
+        }
+        return promise
+      })
   }
 
   checkResources (api) {
     debug('checkResources called')
 
+    logger.info('checking resources')
     return api.resources()
-    .then(resources => this.deleteResources(api, resources))
-    .then(resources => this.createResources(api, resources))
+      .then(resources => this.deleteResources(api, resources))
+      .then(resources => this.createResources(api, resources))
   }
 
   createMethodResponses (method) {
     const resource = method._resource
     const resConfig = this.config.apiGateway.resources[resource.path][method.httpMethod].responses
-    let p = Promise.resolve()
+    let promise = Promise.resolve()
 
     _.forEach(resConfig, (rval, rkey) => {
-      p = p.then(() => {
-        logger.info((`create method response status:${rkey} for ${method.httpMethod}:${resource.path} ...`).green)
+      promise = promise.then(() => {
         const resParams = {}
         _.forEach(rval.responseHeaders, (hval, hkey) => {
           resParams[`method.response.header.${hkey}`] = false
         })
 
+        logger.info((`create method response status:${rkey} for ${method.httpMethod}:${resource.path}`).green)
         return method.createMethodResponse({
           statusCode: rkey,
           responseModels: rval.responseModels || {'application/json': 'Empty'},
@@ -248,12 +258,12 @@ class AglexLib {
         })
       })
     })
-    return p
+    return promise
   }
 
   createMethods (resource, methods) {
     const config = this.config.apiGateway
-    const arr = []
+    let promise = Promise.resolve()
 
     _.forEach(config.resources[resource.path], (methodConfig, methodName) => {
       if (_.find(methods, {httpMethod: methodName})) {
@@ -264,17 +274,22 @@ class AglexLib {
       _.forEach(resource.path.match(/\{.+?\}/g), match => {
         reqParams[`method.request.path.${match.replace(/[{}]/g, '')}`] = true
       })
-      logger.info((`create method ${methodName} for ${resource.path}`).green)
-      arr.push(() => resource.createMethod({
-        authorizationType: methodConfig.authorizationType || 'NONE',
-        httpMethod: methodName,
-        apiKeyRequired: methodConfig.apiKeyRequired || false,
-        requestModels: methodConfig.requestModels || null,
-        requestParameters: reqParams || null
-      }).then(method => methods.push(method)))
+
+      promise = promise
+        .then(() => {
+          logger.info((`create method ${methodName} for ${resource.path}`).green)
+          return resource.createMethod({
+            authorizationType: methodConfig.authorizationType || 'NONE',
+            httpMethod: methodName,
+            apiKeyRequired: methodConfig.apiKeyRequired || false,
+            requestModels: methodConfig.requestModels || null,
+            requestParameters: reqParams || null
+          })
+        })
+        .then(method => methods.push(method))
     })
 
-    return reducePromises(arr).then(() => methods)
+    return promise.then(() => methods)
   }
 
   createResources (api, resources) {
@@ -282,69 +297,77 @@ class AglexLib {
 
     // create unregistered resource
     const resourceHash = {}
-    let p = Promise.resolve()
+    let promise = Promise.resolve()
     let added = false
 
-    _.forEach(resources, resource => {
+    for (let resource of resources) {
       resourceHash[resource.path] = resource
-    })
-    _.forEach(Object.keys(config.resources).sort(), resource => {
+    }
+
+    for (let resource of Object.keys(config.resources).sort()) {
       if (!_.find(resources, {path: resource})) {
-        logger.info((`create resource ${resource}`).green)
-        p = p.then(() => api.createResource({
-          parentId: resourceHash[path.dirname(resource)].id,
-          pathPart: path.basename(resource)
-        })
-        .then(resource => {
-          resourceHash[resource.path] = resource
-          return
-        }))
+        promise = promise
+          .then(() => {
+            logger.info((`create resource ${resource}`).green)
+            return api.createResource({
+              parentId: resourceHash[path.dirname(resource)].id,
+              pathPart: path.basename(resource)
+            })
+          })
+          .then(resource => {
+            resourceHash[resource.path] = resource
+            return
+          })
         added = true
       }
-    })
-    if (added) {
-      return p.then(() => api.resources())
     }
-    return resources
+    if (added) {
+      return promise.then(() => api.resources())
+    }
+    return promise.then(() => resources)
   }
 
   deleteMethods (resource, methods) {
     const config = this.config.apiGateway
-    const promises = []
     const activeMethods = []
+    let promise = Promise.resolve()
 
     // delete unused method
-    _.forEach(methods, method => {
+    for (let method of methods) {
       if (config.resources[resource.path][method.httpMethod]) {
         activeMethods.push(method)
       } else {
-        logger.info((`delete method ${method.httpMethod} for ${resource.path}`).red)
-        promises.push(() => method.delete())
+        promise = promise.then(() => {
+          logger.info(`delete method ${method.httpMethod} for ${resource.path}`.red)
+          return method.delete()
+        })
       }
-    })
+    }
 
-    return reducePromises(promises).then(() => activeMethods)
+    return promise.then(() => activeMethods)
   }
 
   deleteResources (api, resources) {
     const config = this.config.apiGateway
 
     // delete unused resource
-    let p = Promise.resolve()
+    let promise = Promise.resolve()
     let deleted = false
 
-    _.forEach(resources, resource => {
+    for (let resource of resources) {
       if (!config.resources[resource.path]) {
-        logger.info((`delete resource ${resource.path}`).red)
-        p = p.then(() => resource.delete())
+        promise = promise.then(() => {
+          logger.info((`delete resource ${resource.path}`).red)
+          return resource.delete()
+        })
         deleted = true
       }
-    })
+    }
 
     if (deleted) {
-      return p.then(() => api.resources())
+      return promise.then(() => api.resources())
     }
-    return resources
+    return promise.then(() => resources)
   }
 
   deployApi (description, stageName, stageDescription) {
@@ -484,7 +507,7 @@ class AglexLib {
         FunctionName: this.config.lambda.FunctionName,
         StatementId: 'ExecuteFromApiGateway'
       })
-      .then(() => {}, () => {})
+      .catch(() => {})
       .then(() => this.lambda.addPermissionAsyncB({
         FunctionName: this.config.lambda.FunctionName,
         Principal: 'apigateway.amazonaws.com',
@@ -498,7 +521,5 @@ class AglexLib {
     })
   }
 }
-
-var reducePromises = arr => Promise.reduce(arr, (_, task) => task(), null)
 
 export default (config, api) => new AglexLib(config, api)

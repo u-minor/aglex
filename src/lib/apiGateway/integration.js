@@ -54,7 +54,7 @@ export const integration = api => {
       restApiId: method._resource._restApi.id
     }, params)
 
-    return Promise.delay(200)
+    return Promise.delay(250)
     .then(() => api.putIntegrationAsync(obj))
     .then(data => {
       debug(data)

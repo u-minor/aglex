@@ -44,7 +44,7 @@ export const method = api => {
     }
 
     delete () {
-      return Promise.delay(200)
+      return Promise.delay(250)
       .then(() => api.deleteMethodAsync({
         httpMethod: this.httpMethod,
         resourceId: this._resource.id,
@@ -67,7 +67,7 @@ export const method = api => {
       restApiId: resource._restApi.id
     }, params)
 
-    return Promise.delay(200)
+    return Promise.delay(250)
     .then(() => api.putMethodAsync(obj))
     .then(data => {
       debug(data)
