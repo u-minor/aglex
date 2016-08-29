@@ -32,15 +32,15 @@
     "test-ci": "NODE_ENV=test $(npm bin)/babel-node $(npm bin)/babel-istanbul cover --report lcovonly $(npm bin)/_mocha -- --compilers js:babel-core/register --reporter dot --check-leaks --recursive test"
   },
   "dependencies": {
-    "aws-sdk": "^2.4.13",
-    "bluebird": "^3.4.1",
+    "aws-sdk": "^2.5.3",
+    "bluebird": "^3.4.3",
     "coffee-script": "^1.10.0",
     "colors": "^1.1.2",
     "debug": "^2.2.0",
     "js-yaml": "^3.6.1",
-    "lodash": "^4.14.1",
+    "lodash": "^4.15.0",
     "winston": "^2.2.0",
-    "yargs": "^4.8.1"
+    "yargs": "^5.0.0"
   },
   "devDependencies": {
     "babel-cli": "^6.11.4",
