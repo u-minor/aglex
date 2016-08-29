@@ -50,15 +50,19 @@ describe('integration', () => {
 
   describe('Integration.create', () => {
     it('should return promise object', () => {
+      sb.useFakeTimers()
       const ret = Integration.create(method, {request: {}})
+      sb.clock.tick(250)
 
-      return expect(ret).to.be.an.instanceof(Promise)
+      expect(ret).to.be.an.instanceof(Promise)
     })
 
     it('should resolve with new Integration object', () => {
+      sb.useFakeTimers()
       sb.stub(apiGateway, 'putIntegrationAsync')
         .resolves({request: {}})
       const ret = Integration.create(method, {request: {}})
+      sb.clock.tick(250)
 
       return expect(ret).to.become({
         _method: method,
@@ -129,23 +133,19 @@ describe('integration', () => {
 
   describe('update', () => {
     it('should return promise object', () => {
-      sb.stub(apiGateway, 'putIntegrationAsync')
-        .resolves({request: {}})
+      sb.stub(Integration, 'create')
+        .resolves(new Integration(method, {request: {}}))
       const ret = integration.update({request: {}})
 
       expect(ret).to.be.an.instanceof(Promise)
-      return ret
     })
 
     it('should update to new data', () => {
-      sb.stub(apiGateway, 'putIntegrationAsync')
-        .resolves({request: {}})
+      sb.stub(Integration, 'create')
+        .resolves(new Integration(method, {request: {}}))
       const ret = integration.update({request: {}})
 
-      return ret.then(data => {
-        expect(data).to.be.an.instanceof(Integration)
-        expect(apiGateway.putIntegrationAsync).to.have.been.calledOnce
-      })
+      return expect(ret).to.eventually.be.an.instanceof(Integration)
     })
   })
 })

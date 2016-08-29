@@ -41,23 +41,25 @@ describe('integrationResponse', () => {
 
   describe('IntegrationResponse.create', () => {
     it('should return promise object', () => {
+      sb.useFakeTimers()
       sb.stub(apiGateway, 'putIntegrationResponseAsync')
         .resolves()
       const ret = IntegrationResponse.create(integration, {statusCode: '200'})
+      sb.clock.tick(250)
 
       expect(ret).to.be.an.instanceof(Promise)
     })
 
     it('should resolve with new IntegrationResponse object', () => {
+      sb.useFakeTimers()
       sb.stub(apiGateway, 'putIntegrationResponseAsync')
         .resolves({statusCode: '200'})
       const ret = IntegrationResponse.create(integration, {statusCode: '200'})
+      sb.clock.tick(250)
 
-      return ret.then(data => {
-        expect(data).to.deep.equal({
-          _integration: integration,
-          statusCode: '200'
-        })
+      return expect(ret).to.become({
+        _integration: integration,
+        statusCode: '200'
       })
     })
   })
@@ -71,9 +73,11 @@ describe('integrationResponse', () => {
 
   describe('delete', () => {
     it('should return promise object', () => {
+      sb.useFakeTimers()
       sb.stub(apiGateway, 'deleteIntegrationResponseAsync')
         .resolves()
       const ret = integrationResponse.delete({})
+      sb.clock.tick(250)
 
       expect(ret).to.be.an.instanceof(Promise)
     })
@@ -81,28 +85,21 @@ describe('integrationResponse', () => {
 
   describe('update', () => {
     it('should return promise object', () => {
-      sb.stub(apiGateway, 'deleteIntegrationResponseAsync')
-        .resolves()
-      sb.stub(apiGateway, 'putIntegrationResponseAsync')
-        .resolves({'200': {}})
+      sb.stub(integrationResponse, 'delete')
+        .returns(new Promise(() => {}))
       const ret = integrationResponse.update({})
 
       expect(ret).to.be.an.instanceof(Promise)
-      return ret
     })
 
     it('should delete old data and create new data', () => {
-      sb.stub(apiGateway, 'deleteIntegrationResponseAsync')
+      sb.stub(integrationResponse, 'delete')
         .resolves()
-      sb.stub(apiGateway, 'putIntegrationResponseAsync')
-        .resolves({'200': {}})
+      sb.stub(IntegrationResponse, 'create')
+        .resolves(new IntegrationResponse(integration, {statusCode: '200'}))
       const ret = integrationResponse.update({})
 
-      return ret.then(data => {
-        expect(data).to.be.an.instanceof(IntegrationResponse)
-        expect(apiGateway.deleteIntegrationResponseAsync).to.have.been.calledOnce
-        expect(apiGateway.putIntegrationResponseAsync).to.have.been.calledOnce
-      })
+      return expect(ret).to.eventually.be.an.instanceof(IntegrationResponse)
     })
   })
 })

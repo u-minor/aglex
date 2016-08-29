@@ -125,7 +125,7 @@ describe('aglexLib', () => {
 
       const ret = aglexLib.addLambdaPermission()
 
-      expect(ret).to.become({Statement: ''})
+      return expect(ret).to.become({Statement: ''})
     })
 
     it('should reject if lambda not found', () => {
@@ -134,7 +134,7 @@ describe('aglexLib', () => {
 
       const ret = aglexLib.addLambdaPermission()
 
-      expect(ret).to.rejectedWith('Function not found')
+      return expect(ret).to.rejectedWith('Function not found')
     })
   })
 
@@ -494,7 +494,7 @@ describe('aglexLib', () => {
         ])
       })
 
-      expect(ret).to.become([{id: '12345abcde', path: '/'}])
+      return expect(ret).to.become([{id: '12345abcde', path: '/'}])
     })
 
     it('should delete unused resources', () => {
@@ -509,7 +509,7 @@ describe('aglexLib', () => {
         ])
       const ret = aglexLib.checkResources({resources: res})
 
-      expect(ret).to.become([{id: '12345abcde', path: '/'}])
+      return expect(ret).to.become([{id: '12345abcde', path: '/'}])
     })
 
     it('should create new resources', () => {
@@ -528,7 +528,7 @@ describe('aglexLib', () => {
         resources: res
       })
 
-      expect(ret).to.become([
+      return expect(ret).to.become([
         {id: '12345abcde', path: '/'},
         {id: '67890eghij', path: '/dummy'}
       ])
@@ -695,7 +695,7 @@ describe('aglexLib', () => {
 
       const ret = aglexLib.deployApi('desc', 'stage', 'stage desc')
 
-      expect(ret).to.become({})
+      return expect(ret).to.become({})
     })
 
     it('should resolve with a new api object', () => {
@@ -705,7 +705,7 @@ describe('aglexLib', () => {
 
       const ret = aglexLib.deployApi('desc', 'stage', 'stage desc')
 
-      expect(ret).to.rejectedWith(Error)
+      return expect(ret).to.rejectedWith(Error)
     })
   })
 
@@ -739,7 +739,7 @@ describe('aglexLib', () => {
 
       const ret = aglexLib.getApi()
 
-      expect(ret).to.become(apiObj)
+      return expect(ret).to.become(apiObj)
     })
 
     it('should resolve with a new api object', () => {
@@ -752,7 +752,7 @@ describe('aglexLib', () => {
 
       const ret = aglexLib.getApi()
 
-      expect(ret).to.become(apiObj)
+      return expect(ret).to.become(apiObj)
     })
   })
 
@@ -786,7 +786,7 @@ describe('aglexLib', () => {
 
       const ret = aglexLib.getApiStages()
 
-      expect(ret).to.become([])
+      return expect(ret).to.become([])
     })
 
     it('should reject if api not found', () => {
@@ -796,7 +796,7 @@ describe('aglexLib', () => {
 
       const ret = aglexLib.getApiStages()
 
-      expect(ret).to.rejectedWith(Error)
+      return expect(ret).to.rejectedWith(Error)
     })
   })
 
@@ -840,7 +840,7 @@ describe('aglexLib', () => {
 
       const ret = aglexLib.getLambda()
 
-      expect(ret).to.become({
+      return expect(ret).to.become({
         Configuration: {
           FunctionArn: 'arn:aws:lambda:local:12345:function:testLambda',
           FunctionName: 'testLambda'
@@ -854,7 +854,7 @@ describe('aglexLib', () => {
 
       const ret = aglexLib.getLambda()
 
-      expect(ret).to.rejectedWith('Function not found')
+      return expect(ret).to.rejectedWith('Function not found')
     })
   })
 
@@ -891,26 +891,26 @@ describe('aglexLib', () => {
 
     it('should resolve with a current lambda object', () => {
       sb.stub(AWS._stub_.IAM, 'getRoleAsync')
-        .returns(Promise.resolve({
+        .resolves({
           Role: {
             Arn: 'arn:aws:iam::12345:role/test_role'
           }
-        }))
+        })
       sb.stub(AWS._stub_.Lambda, 'getFunctionAsyncB')
-        .returns(Promise.resolve({
+        .resolves({
           Configuration: {
             FunctionArn: 'arn:aws:lambda:local:12345:function:testLambda',
             FunctionName: 'testLambda'
           }
-        }))
+        })
       sb.stub(AWS._stub_.Lambda, 'updateFunctionConfigurationAsyncB')
-        .returns(Promise.resolve())
+        .resolves()
       sb.stub(AWS._stub_.Lambda, 'updateFunctionCodeAsyncB')
-        .returns(Promise.resolve({FunctionName: 'testLambda'}))
+        .resolves({FunctionName: 'testLambda'})
 
       const ret = aglexLib.updateLambda('file')
 
-      expect(ret).to.become({FunctionName: 'testLambda'})
+      return expect(ret).to.become({FunctionName: 'testLambda'})
     })
 
     it('should resolve with a new lambda object', () => {
@@ -927,7 +927,7 @@ describe('aglexLib', () => {
 
       const ret = aglexLib.updateLambda('file')
 
-      expect(ret).to.become({FunctionName: 'testLambda'})
+      return expect(ret).to.become({FunctionName: 'testLambda'})
     })
   })
 })

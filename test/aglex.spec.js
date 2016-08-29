@@ -147,7 +147,7 @@ describe('aglex', () => {
     it('should resolve with a valid object', () => {
       const ret = aglex.getApiStages()
 
-      expect(ret).to.become([
+      return expect(ret).to.become([
         {stageName: 'stage1', description: 'stage1 desc', invokeUrl: 'http://test.api/stage1'},
         {stageName: 'stage2', description: 'stage2 desc', invokeUrl: 'http://test.api/stage2'}
       ])
@@ -185,7 +185,7 @@ describe('aglex', () => {
       const ret = aglex.updateApi()
 
       expect(ret).to.be.an.instanceof(Promise)
-      expect(ret).to.become(null)
+      return expect(ret).to.become(null)
     })
   })
 

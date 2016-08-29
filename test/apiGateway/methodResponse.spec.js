@@ -38,23 +38,25 @@ describe('methodResponse', () => {
 
   describe('MethodResponse.create', () => {
     it('should return promise object', () => {
+      sb.useFakeTimers()
       sb.stub(apiGateway, 'putMethodResponseAsync')
         .resolves()
       const ret = MethodResponse.create(method, {statusCode: '200'})
+      sb.clock.tick(250)
 
       expect(ret).to.be.an.instanceof(Promise)
     })
 
     it('should resolve with new MethodResponse object', () => {
+      sb.useFakeTimers()
       sb.stub(apiGateway, 'putMethodResponseAsync')
         .resolves({statusCode: '200'})
       const ret = MethodResponse.create(method, {statusCode: '200'})
+      sb.clock.tick(250)
 
-      return ret.then(data => {
-        expect(data).to.deep.equal({
-          _method: method,
-          statusCode: '200'
-        })
+      return expect(ret).to.become({
+        _method: method,
+        statusCode: '200'
       })
     })
   })
@@ -68,37 +70,33 @@ describe('methodResponse', () => {
 
   describe('delete', () => {
     it('should return promise object', () => {
+      sb.useFakeTimers()
       sb.stub(apiGateway, 'deleteMethodResponseAsync')
         .resolves()
       const ret = methodResponse.delete({})
+      sb.clock.tick(250)
 
       expect(ret).to.be.an.instanceof(Promise)
-      return ret
     })
   })
 
   describe('update', () => {
     it('should return promise object', () => {
-      sb.stub(apiGateway, 'deleteMethodResponseAsync')
-        .resolves()
+      sb.stub(methodResponse, 'delete')
+        .returns(new Promise(() => {}))
       const ret = methodResponse.update({})
 
       expect(ret).to.be.an.instanceof(Promise)
-      return ret
     })
 
     it('should delete old data and create new data', () => {
-      sb.stub(apiGateway, 'deleteMethodResponseAsync')
+      sb.stub(methodResponse, 'delete')
         .resolves()
-      sb.stub(apiGateway, 'putMethodResponseAsync')
-        .resolves({'200': {}})
+      sb.stub(MethodResponse, 'create')
+        .resolves(new MethodResponse(method, {statusCode: '200'}))
       const ret = methodResponse.update({})
 
-      return ret.then(data => {
-        expect(data).to.be.an.instanceof(MethodResponse)
-        expect(apiGateway.deleteMethodResponseAsync).to.have.been.calledOnce
-        expect(apiGateway.putMethodResponseAsync).to.have.been.calledOnce
-      })
+      return expect(ret).to.eventually.be.an.instanceof(MethodResponse)
     })
   })
 })

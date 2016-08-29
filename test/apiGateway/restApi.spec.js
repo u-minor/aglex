@@ -47,12 +47,10 @@ describe('restApi', () => {
 
     it('should resolve with new RestApi object', () => {
       sb.stub(apiGateway, 'createRestApiAsync')
-        .resolves({
-          name: 'test_api'
-        })
+        .resolves({name: 'test_api'})
       const ret = RestApi.create({name: 'test_api'})
 
-      expect(ret).to.become({name: 'test_api'})
+      return expect(ret).to.become({name: 'test_api'})
     })
   })
 
@@ -74,7 +72,7 @@ describe('restApi', () => {
         })
       const ret = RestApi.findByName('test_api')
 
-      expect(ret).to.become({name: 'test_api'})
+      return expect(ret).to.become({name: 'test_api'})
     })
 
     it('should resolve with null if api not found', () => {
@@ -86,7 +84,7 @@ describe('restApi', () => {
         })
       const ret = RestApi.findByName('test_api')
 
-      expect(ret).to.become(null)
+      return expect(ret).to.become(null)
     })
   })
 
@@ -132,8 +130,7 @@ describe('restApi', () => {
         })
       const ret = restApi.resources({})
 
-      expect(ret).to.eventually.be.an('array')
-      expect(ret).to.eventually.have.lengthOf(2)
+      return expect(ret).to.eventually.have.lengthOf(2)
     })
   })
 
@@ -156,8 +153,7 @@ describe('restApi', () => {
         })
       const ret = restApi.stages({})
 
-      expect(ret).to.eventually.be.an('array')
-      expect(ret).to.eventually.have.lengthOf(2)
+      return expect(ret).to.eventually.have.lengthOf(2)
     })
   })
 })

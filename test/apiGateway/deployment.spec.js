@@ -52,12 +52,10 @@ describe('deployment', () => {
         createdDate: 'Fri, 01 Jan 2016 00:00:00 GMT'
       })
 
-      return ret.then(data => {
-        expect(data).to.deep.equal({
-          _restApi: restApi,
-          id: '123abc',
-          createdDate: 'Fri, 01 Jan 2016 00:00:00 GMT'
-        })
+      return expect(ret).to.become({
+        _restApi: restApi,
+        id: '123abc',
+        createdDate: 'Fri, 01 Jan 2016 00:00:00 GMT'
       })
     })
   })

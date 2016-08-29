@@ -51,23 +51,25 @@ describe('method', () => {
 
   describe('Method.create', () => {
     it('should return promise object', () => {
+      sb.useFakeTimers()
       sb.stub(apiGateway, 'putMethodAsync')
         .resolves()
       const ret = Method.create(resource, {httpMethod: 'GET'})
+      sb.clock.tick(250)
 
       expect(ret).to.be.an.instanceof(Promise)
     })
 
     it('should resolve with new Method object', () => {
+      sb.useFakeTimers()
       sb.stub(apiGateway, 'putMethodAsync')
         .resolves({httpMethod: 'GET'})
       const ret = Method.create(resource, {httpMethod: 'GET'})
+      sb.clock.tick(250)
 
-      return ret.then(data => {
-        expect(data).to.deep.equal({
-          _resource: resource,
-          httpMethod: 'GET'
-        })
+      return expect(ret).to.become({
+        _resource: resource,
+        httpMethod: 'GET'
       })
     })
   })
@@ -128,6 +130,7 @@ describe('method', () => {
       const ret = method.createMethodResponse({statusCode: '200'})
 
       expect(ret).to.be.an.instanceof(Promise)
+      return ret
     })
 
     it('should set methodResponses after resolved', () => {
@@ -160,11 +163,14 @@ describe('method', () => {
 
   describe('delete', () => {
     it('should return promise object', () => {
+      sb.useFakeTimers()
       sb.stub(apiGateway, 'deleteMethodAsync')
-        .resolves()
+        .resolves({})
       const ret = method.delete({})
+      sb.clock.tick(250)
 
       expect(ret).to.be.an.instanceof(Promise)
+      return expect(ret).to.become({})
     })
   })
 
@@ -174,7 +180,6 @@ describe('method', () => {
       const ret = method.updateIntegration({})
 
       expect(ret).to.be.an.instanceof(Promise)
-      return ret
     })
   })
 
@@ -186,7 +191,6 @@ describe('method', () => {
       const ret = method.updateMethodResponse({statusCode: '200'})
 
       expect(ret).to.be.an.instanceof(Promise)
-      return ret
     })
   })
 })

@@ -38,26 +38,28 @@ describe('resource', () => {
 
   describe('Resource.create', () => {
     it('should return promise object', () => {
+      sb.useFakeTimers()
       sb.stub(apiGateway, 'createResourceAsync')
         .resolves()
       const ret = Resource.create(restApi, {path: '/'})
+      sb.clock.tick(250)
 
       expect(ret).to.be.an.instanceof(Promise)
     })
 
     it('should resolve with new Resource object', () => {
+      sb.useFakeTimers()
       sb.stub(apiGateway, 'createResourceAsync').returns(Promise.resolve({
         id: '12345abcde',
         path: '/'
       }))
       const ret = Resource.create(restApi, {path: '/'})
+      sb.clock.tick(250)
 
-      return ret.then(data => {
-        expect(data).to.deep.equal({
-          _restApi: {},
-          id: '12345abcde',
-          path: '/'
-        })
+      return expect(ret).to.become({
+        _restApi: {},
+        id: '12345abcde',
+        path: '/'
       })
     })
   })
@@ -103,18 +105,20 @@ describe('resource', () => {
       })
       const ret = res.methods()
 
-      expect(ret).to.eventually.be.an('array')
-      expect(ret).to.eventually.have.lengthOf(2)
+      return expect(ret).to.eventually.have.lengthOf(2)
     })
   })
 
   describe('delete', () => {
     it('should return promise object', () => {
+      sb.useFakeTimers()
       sb.stub(apiGateway, 'deleteResourceAsync')
-        .resolves()
+        .resolves({})
       const ret = res.delete({})
+      sb.clock.tick(250)
 
       expect(ret).to.be.an.instanceof(Promise)
+      return expect(ret).to.become({})
     })
   })
 })
