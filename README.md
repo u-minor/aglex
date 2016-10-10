@@ -144,6 +144,10 @@ Aglex is not a web framework, just a small CLI tool which provides following fea
 
 For more information, please see wiki docs.
 
+## See Also
+
+ * [aws-serverless-express](https://github.com/awslabs/aws-serverless-express) is developed by AWS to make it easy to run Express apps on Lambda.
+
 [aglex-img]: https://raw.githubusercontent.com/u-minor/aglex/master/logo.png
 [npm-img]: https://img.shields.io/npm/v/aglex.svg
 [npm-url]: https://npmjs.org/package/aglex
