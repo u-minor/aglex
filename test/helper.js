@@ -1,11 +1,10 @@
 import _ from 'lodash'
-import Promise from 'bluebird'
 import chai, {expect} from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import sinon from 'sinon'
 import sinonChai from 'sinon-chai'
 
-require('sinon-as-promised')(Promise)
+require('sinon-as-promised')
 chai.use(chaiAsPromised)
 chai.use(sinonChai)
 
@@ -20,22 +19,11 @@ const AWS = {
         region: 'us-east-1'
       }
     }
-    createDeploymentAsync () {}
-    createResourceAsync () {}
-    createRestApiAsync () {}
-    createStageAsync () {}
-    deleteIntegrationResponseAsync () {}
-    deleteMethodAsync () {}
-    deleteMethodResponseAsync () {}
-    deleteResourceAsync () {}
-    getMethodAsync () {}
-    getResourcesAsync () {}
-    getRestApisAsync () {}
-    getStagesAsync () {}
-    putIntegrationAsync () {}
-    putIntegrationResponseAsync () {}
-    putMethodAsync () {}
-    putMethodResponseAsync () {}
+    createDeployment () {}
+    getRestApis () {}
+    getStages () {}
+    importRestApi () {}
+    putRestApi () {}
   },
   Credentials: () => {},
   IAM: () => AWS._stub_.IAM,
@@ -44,18 +32,18 @@ const AWS = {
 
   _stub_: {
     IAM: {
-      getRoleAsync: () => {}
+      getRole: () => {}
     },
     Lambda: {
       config: {},
-      addPermissionAsyncB: () => {},
-      createFunctionAsyncB: () => {},
-      getFunctionAsyncB: () => {},
-      removePermissionAsyncB: () => {},
-      updateFunctionCodeAsyncB: () => {},
-      updateFunctionConfigurationAsyncB: () => {}
+      addPermission: () => {},
+      createFunction: () => {},
+      getFunction: () => {},
+      removePermission: () => {},
+      updateFunctionCode: () => {},
+      updateFunctionConfiguration: () => {}
     }
   }
 }
 
-export { _, AWS, Promise, expect, sinon }
+export { _, AWS, expect, sinon }

@@ -1,7 +1,6 @@
 import fs from 'fs'
 import path from 'path'
 import Debug from 'debug'
-import Promise from 'bluebird'
 import aglexLib from './aglexLib'
 
 const debug = Debug('aglex.core')
@@ -28,11 +27,7 @@ class Aglex {
     debug('updateApi called')
     const lib = aglexLib(this.config, this.logLevel)
     return lib.getLambda()
-    .then(lambda => lib.getApi())
-    .then(api => lib.checkResources(api))
-    .then(resources => {
-      return Promise.reduce(resources, (_, resource) => lib.checkMethods(resource), null)
-    })
+    .then(lambda => lib.updateApi())
   }
 
   updateLambda (file) {
@@ -51,12 +46,8 @@ class Aglex {
     return fs.readFileSync(path.resolve(__dirname, '../../config/config.yml'), 'utf8')
   }
 
-  generateLambdaHandler (coffee) {
-    let content = fs.readFileSync(path.resolve(__dirname, '../../config/lambda.coffee'), 'utf8')
-    if (!coffee) {
-      content = require('coffee-script').compile(content, {bare: true})
-    }
-    return content.trim()
+  generateLambdaHandler () {
+    return fs.readFileSync(path.resolve(__dirname, '../../config/lambda.js'), 'utf8')
   }
 }
 

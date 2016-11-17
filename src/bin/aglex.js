@@ -19,8 +19,7 @@ const yargs = Yargs.usage('Usage: $0 <command> ... [options]')
       })
       .command('lambda-handler', 'Generate lambda handler code', yargs => {
         argv = yargs
-          .usage('Usage: $0 generate lambda-handler [options]')
-          .option('coffee', {demand: false, describe: 'Generate CoffeeScript code'})
+          .usage('Usage: $0 generate lambda-handler')
           .help('help').alias('help', 'h')
           .argv
       })
@@ -98,7 +97,7 @@ switch (argv._[0]) {
         console.log(aglex.generateConfig())
         break
       case 'lambda-handler':
-        console.log(aglex.generateLambdaHandler(argv.coffee))
+        console.log(aglex.generateLambdaHandler())
         break
       default:
         yargs.showHelp()

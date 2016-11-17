@@ -3,12 +3,10 @@ import Debug from 'debug'
 
 const debug = Debug('aglex.apiGateway.restApi')
 
-import {resource} from './resource'
 import {deployment} from './deployment'
 import {stage} from './stage'
 
 export const restApi = api => {
-  const Resource = resource(api)
   const Deployment = deployment(api)
   const Stage = stage(api)
 
@@ -21,28 +19,11 @@ export const restApi = api => {
       return Deployment.create(this, params)
     }
 
-    createResource (params) {
-      return Resource.create(this, params)
-    }
-
-    resources () {
-      return api.getResourcesAsync({
-        restApiId: this.id,
-        limit: 500
-      }).then(data => {
-        const arr = []
-        debug(data)
-        _.forEach(data.items, item => {
-          arr.push(new Resource(this, item))
-        })
-        return _.sortBy(arr, 'path')
-      })
-    }
-
     stages () {
-      return api.getStagesAsync({
+      return api.getStages({
         restApiId: this.id
-      }).then(data => {
+      }).promise()
+      .then(data => {
         debug(data)
         const arr = []
         _.forEach(data.item, item => {
@@ -51,15 +32,31 @@ export const restApi = api => {
         return _.sortBy(arr, 'stageName')
       })
     }
+
+    update (definition) {
+      return api.putRestApi({
+        body: JSON.stringify(definition),
+        failOnWarnings: true,
+        mode: 'overwrite',
+        restApiId: this.id
+      }).promise()
+      .then(data => {
+        _.merge(this, data)
+        return this
+      })
+    }
   }
 
-  RestApi.create = params => api.createRestApiAsync(params)
+  RestApi.create = definition => api.importRestApi({
+    body: JSON.stringify(definition),
+    failOnWarnings: true
+  }).promise()
   .then(data => {
     debug(data)
     return new RestApi(data)
   })
 
-  RestApi.findByName = name => api.getRestApisAsync()
+  RestApi.findByName = name => api.getRestApis().promise()
   .then(data => {
     debug(data)
     const api = _.find(data.items, {name})

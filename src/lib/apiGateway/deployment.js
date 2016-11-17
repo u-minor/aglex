@@ -16,7 +16,7 @@ export const deployment = api => {
       restApiId: restApi.id
     }, params)
 
-    return api.createDeploymentAsync(obj)
+    return api.createDeployment(obj).promise()
     .then(data => {
       debug(data)
       return new Deployment(restApi, data)

@@ -1,9 +1,7 @@
 import fs from 'fs'
-import path from 'path'
 import _ from 'lodash'
 import AWS from 'aws-sdk'
 import Debug from 'debug'
-import Promise from 'bluebird'
 import logger from 'winston'
 import apiGateway from './apiGateway'
 import util from './util'
@@ -27,356 +25,18 @@ class AglexLib {
     }
 
     this.apiGateway = apiGateway()
-    this.lambda = Promise.promisifyAll(new AWS.Lambda(), {suffix: 'AsyncB'})
+    this.lambda = new AWS.Lambda()
     this.config = conf
     this.lambdaFunction = undefined
-
-    util.normalizeResources(this.config.apiGateway.resources)
-    util.normalizeMethods(this.config.apiGateway.resources, this.config.apiGateway.methodDefinitions)
-  }
-
-  checkIntegration (method) {
-    debug('checkIntegration called - method:%s resource:%s', method.httpMethod, method._resource.path)
-
-    return this.checkIntegrationRequest(method)
-      .then(() => this.checkMethodResponses(method))
-      .then(() => this.checkIntegrationResponses(method.methodIntegration))
-  }
-
-  checkIntegrationRequest (method) {
-    const integrationConfig = this.config.apiGateway.resources[method._resource.path][method.httpMethod].request
-
-    debug('checkIntegrationRequest called - method:%s resource:%s', method.httpMethod, method._resource.path)
-
-    if (!method.methodIntegration) {
-      logger.info((`create integration request for ${method.httpMethod}:${method._resource.path}`).green)
-      return method.createIntegration(integrationConfig)
-    }
-
-    let needUpdate = false
-    _.forEach(integrationConfig, (val, key) => {
-      if (key === 'integrationHttpMethod') {
-        key = 'httpMethod'
-      }
-      if (!_.isEqual(method.methodIntegration[key], val)) {
-        needUpdate = true
-      }
-    })
-
-    if (needUpdate) {
-      logger.info((`update integration request for ${method.httpMethod}:${method._resource.path}`).yellow)
-      return method.updateIntegration(integrationConfig)
-    }
-
-    return Promise.resolve()
-  }
-
-  checkIntegrationResponses (integration) {
-    const method = integration._method
-    const resource = method._resource
-    const resConfig = this.config.apiGateway.resources[resource.path][method.httpMethod].responses
-    let promise = Promise.resolve()
-
-    debug('checkIntegrationResponses called - method:%s resource:%s', method.httpMethod, method._resource.path)
-
-    if (!integration.integrationResponses) {
-      _.forEach(resConfig, (rval, rkey) => {
-        const resParams = {}
-        _.forEach(rval.responseHeaders, (hval, hkey) => {
-          resParams[`method.response.header.${hkey}`] = hval
-        })
-        const obj = {
-          statusCode: rkey,
-          responseParameters: resParams,
-          responseTemplates: rval.responseTemplates || {'application/json': ''}
-        }
-        if (rval.selectionPattern) {
-          obj.selectionPattern = rval.selectionPattern
-        }
-
-        promise = promise.then(() => {
-          logger.info((`create integration response status:${rkey} for ${method.httpMethod}:${resource.path}`).green)
-          return integration.createIntegrationResponse(obj)
-        })
-      })
-      return promise
-    }
-
-    _.forEach(resConfig, (obj, statusCode) => {
-      // check difference
-      let needUpdate = false
-      const ir = integration.integrationResponses[statusCode]
-      const resParams = {}
-      _.forEach(obj.responseHeaders, (hval, hkey) => {
-        resParams[`method.response.header.${hkey}`] = hval
-      })
-      _.defaults(obj, {
-        responseTemplates: {'application/json': ''}
-      })
-
-      if (!_.isEqual(ir.selectionPattern, obj.selectionPattern)) {
-        needUpdate = true
-      }
-      if (!_.isEqual(ir.responseParameters, resParams)) {
-        needUpdate = true
-      }
-      const templates = _.cloneDeep(ir.responseTemplates)
-      _.forEach(templates, (val, key) => {
-        if (val === null) {
-          templates[key] = ''
-        }
-      })
-      if (!_.isEqual(templates, obj.responseTemplates)) {
-        needUpdate = true
-      }
-      if (needUpdate) {
-        promise = promise.then(() => {
-          logger.info((`update integration response status:${statusCode} for ${method.httpMethod}:${resource.path}`).yellow)
-          return ir.update({
-            statusCode,
-            selectionPattern: obj.selectionPattern,
-            responseParameters: resParams,
-            responseTemplates: obj.responseTemplates
-          })
-        })
-      }
-    })
-    return promise
-  }
-
-  checkMethodResponses (method) {
-    debug('checkMethodResponses called - method:%s resource:%s', method.httpMethod, method._resource.path)
-
-    if (!method.methodResponses) {
-      return this.createMethodResponses(method)
-    }
-
-    const resource = method._resource
-    const resConfig = this.config.apiGateway.resources[resource.path][method.httpMethod].responses
-    let promise = Promise.resolve()
-
-    // delete unused methodResponse
-    _.forEach(method.methodResponses, (methodResponse, statusCode) => {
-      if (!resConfig[statusCode]) {
-        promise = promise
-          .then(() => {
-            logger.info((`delete method response status:${statusCode} for ${method.httpMethod}:${resource.path}`).red)
-            return methodResponse.delete()
-          })
-          .then(() => {
-            delete method.methodResponses[statusCode]
-          })
-      }
-    })
-
-    // check difference
-    _.forEach(resConfig, (resConfig, statusCode) => {
-      _.defaults(resConfig, {
-        responseModels: {'application/json': 'Empty'}
-      })
-      const resParams = {}
-      _.forEach(resConfig.responseHeaders, (hval, hkey) => {
-        resParams[`method.response.header.${hkey}`] = false
-      })
-      const methodResponse = method.methodResponses[statusCode]
-
-      if (!methodResponse) {
-        promise = promise.then(() => {
-          logger.info((`create method response status:${statusCode} for ${method.httpMethod}:${resource.path}`).green)
-          return method.createMethodResponse({
-            statusCode,
-            responseModels: resConfig.responseModels || {'application/json': 'Empty'},
-            responseParameters: resParams
-          })
-        })
-        return
-      }
-
-      let needUpdate = false
-      if (!_.isEqual(methodResponse.responseModels, resConfig.responseModels)) {
-        needUpdate = true
-      }
-      if (!_.isEqual(methodResponse.responseParameters, resParams)) {
-        needUpdate = true
-      }
-      if (needUpdate) {
-        promise = promise.then(() => {
-          logger.info((`update method response status:${statusCode} for ${method.httpMethod}:${resource.path}`).yellow)
-          return methodResponse.update({
-            statusCode,
-            responseModels: resConfig.responseModels,
-            responseParameters: resParams
-          })
-        })
-      }
-    })
-    return promise
-  }
-
-  checkMethods (resource) {
-    debug('checkMethods called - resource:%s', resource.path)
-
-    logger.info(`checking methods for ${resource.path}`)
-    return resource.methods()
-      .then(methods => this.deleteMethods(resource, methods))
-      .then(methods => this.createMethods(resource, methods))
-      .then(methods => {
-        let promise = Promise.resolve()
-        for (let method of methods) {
-          promise = promise.then(() => this.checkIntegration(method))
-        }
-        return promise
-      })
-  }
-
-  checkResources (api) {
-    debug('checkResources called')
-
-    logger.info('checking resources')
-    return api.resources()
-      .then(resources => this.deleteResources(api, resources))
-      .then(resources => this.createResources(api, resources))
-  }
-
-  createMethodResponses (method) {
-    const resource = method._resource
-    const resConfig = this.config.apiGateway.resources[resource.path][method.httpMethod].responses
-    let promise = Promise.resolve()
-
-    _.forEach(resConfig, (rval, rkey) => {
-      promise = promise.then(() => {
-        const resParams = {}
-        _.forEach(rval.responseHeaders, (hval, hkey) => {
-          resParams[`method.response.header.${hkey}`] = false
-        })
-
-        logger.info((`create method response status:${rkey} for ${method.httpMethod}:${resource.path}`).green)
-        return method.createMethodResponse({
-          statusCode: rkey,
-          responseModels: rval.responseModels || {'application/json': 'Empty'},
-          responseParameters: resParams
-        })
-      })
-    })
-    return promise
-  }
-
-  createMethods (resource, methods) {
-    const config = this.config.apiGateway
-    let promise = Promise.resolve()
-
-    _.forEach(config.resources[resource.path], (methodConfig, methodName) => {
-      if (_.find(methods, {httpMethod: methodName})) {
-        return
-      }
-
-      const reqParams = {}
-      _.forEach(resource.path.match(/\{.+?\}/g), match => {
-        reqParams[`method.request.path.${match.replace(/[{}]/g, '')}`] = true
-      })
-
-      promise = promise
-        .then(() => {
-          logger.info((`create method ${methodName} for ${resource.path}`).green)
-          return resource.createMethod({
-            authorizationType: methodConfig.authorizationType || 'NONE',
-            httpMethod: methodName,
-            apiKeyRequired: methodConfig.apiKeyRequired || false,
-            requestModels: methodConfig.requestModels || null,
-            requestParameters: reqParams || null
-          })
-        })
-        .then(method => methods.push(method))
-    })
-
-    return promise.then(() => methods)
-  }
-
-  createResources (api, resources) {
-    const config = this.config.apiGateway
-
-    // create unregistered resource
-    const resourceHash = {}
-    let promise = Promise.resolve()
-    let added = false
-
-    for (let resource of resources) {
-      resourceHash[resource.path] = resource
-    }
-
-    for (let resource of Object.keys(config.resources).sort()) {
-      if (!_.find(resources, {path: resource})) {
-        promise = promise
-          .then(() => {
-            logger.info((`create resource ${resource}`).green)
-            return api.createResource({
-              parentId: resourceHash[path.dirname(resource)].id,
-              pathPart: path.basename(resource)
-            })
-          })
-          .then(resource => {
-            resourceHash[resource.path] = resource
-            return
-          })
-        added = true
-      }
-    }
-    if (added) {
-      return promise.then(() => api.resources())
-    }
-    return promise.then(() => resources)
-  }
-
-  deleteMethods (resource, methods) {
-    const config = this.config.apiGateway
-    const activeMethods = []
-    let promise = Promise.resolve()
-
-    // delete unused method
-    for (let method of methods) {
-      if (config.resources[resource.path][method.httpMethod]) {
-        activeMethods.push(method)
-      } else {
-        promise = promise.then(() => {
-          logger.info(`delete method ${method.httpMethod} for ${resource.path}`.red)
-          return method.delete()
-        })
-      }
-    }
-
-    return promise.then(() => activeMethods)
-  }
-
-  deleteResources (api, resources) {
-    const config = this.config.apiGateway
-
-    // delete unused resource
-    let promise = Promise.resolve()
-    let deleted = false
-
-    for (let resource of resources) {
-      if (!config.resources[resource.path]) {
-        promise = promise.then(() => {
-          logger.info((`delete resource ${resource.path}`).red)
-          return resource.delete()
-        })
-        deleted = true
-      }
-    }
-
-    if (deleted) {
-      return promise.then(() => api.resources())
-    }
-    return promise.then(() => resources)
   }
 
   deployApi (description, stageName, stageDescription) {
     debug('deployApi called')
 
-    return this.apiGateway.RestApi.findByName(this.config.apiGateway.name)
+    return this.apiGateway.RestApi.findByName(this.config.apiGateway.info.title)
     .then(api => {
       if (!api) {
-        logger.info((`cannot find api ${this.config.apiGateway.name}`).red)
+        logger.info((`cannot find api ${this.config.apiGateway.info.title}`).red)
         throw new Error('Error')
       }
       logger.info(`found restApi ${api.name} ${api.id}`)
@@ -391,21 +51,18 @@ class AglexLib {
     })
   }
 
-  getApi () {
-    debug('getApi called')
+  updateApi () {
+    debug('updateApi called')
 
-    return this.apiGateway.RestApi.findByName(this.config.apiGateway.name)
+    return this.apiGateway.RestApi.findByName(this.config.apiGateway.info.title)
     .then(api => {
       if (api) {
-        logger.info(`found restApi ${api.name} ${api.id}`)
-        return api
+        logger.info(`found restApi ${api.name} ${api.id}, update`)
+        return api.update(this.config.apiGateway)
       }
 
-      logger.info((`create restApi ${this.config.apiGateway.name}`).green)
-      return this.apiGateway.RestApi.create({
-        name: this.config.apiGateway.name,
-        description: this.config.apiGateway.description
-      })
+      logger.info((`create restApi ${this.config.apiGateway.info.title}`).green)
+      return this.apiGateway.RestApi.create(this.config.apiGateway)
     }, err => {
       logger.info((err.toString()).red)
       throw err
@@ -415,10 +72,10 @@ class AglexLib {
   getApiStages () {
     debug('getApiStages called')
 
-    return this.apiGateway.RestApi.findByName(this.config.apiGateway.name)
+    return this.apiGateway.RestApi.findByName(this.config.apiGateway.info.title)
     .then(api => {
       if (!api) {
-        logger.info((`cannot find api ${this.config.apiGateway.name}`).red)
+        logger.info((`cannot find api ${this.config.apiGateway.info.title}`).red)
         throw new Error('Error')
       }
       logger.info(`found restApi ${api.name} ${api.id}`)
@@ -432,12 +89,10 @@ class AglexLib {
   getLambda () {
     debug('getLambda called')
 
-    return this.lambda.getFunctionAsyncB({
-      FunctionName: this.config.lambda.FunctionName
-    })
+    return this.lambda.getFunction({FunctionName: this.config.lambda.FunctionName}).promise()
     .then(lambda => {
       logger.info(`found lambda ${lambda.Configuration.FunctionName} ${lambda.Configuration.FunctionArn}`)
-      util.normalizeRequestTemplates(this.config.apiGateway.resources, this.config.config.region, lambda.Configuration.FunctionArn)
+      util.normalizeApiDefinition(this.config.apiGateway, this.config.config.region, lambda.Configuration.FunctionArn)
       this.lambdaFunction = lambda
       return lambda
     }, err => {
@@ -449,72 +104,66 @@ class AglexLib {
   updateLambda (file) {
     debug('updateLambda called')
 
-    const iam = Promise.promisifyAll(new AWS.IAM())
-    return iam.getRoleAsync({
-      RoleName: this.config.lambda.RoleName
-    })
+    const iam = new AWS.IAM()
+    return iam.getRole({RoleName: this.config.lambda.RoleName}).promise()
     .then(data => {
       logger.info('found lambda execution role %s', data.Role.Arn)
       // replace RoleName -> Role (ARN)
       this.config.lambda.Role = data.Role.Arn
       delete this.config.lambda.RoleName
 
-      return this.lambda.getFunctionAsyncB({
-        FunctionName: this.config.lambda.FunctionName
-      })
-      .then(lambda => {
-        logger.info(`found lambda ${lambda.Configuration.FunctionName}`)
-        logger.info(('update configuration for %s').yellow, lambda.Configuration.FunctionName)
-        return this.lambda.updateFunctionConfigurationAsyncB(this.config.lambda)
-        .then(() => {
-          logger.info(('update function code for %s').yellow, lambda.Configuration.FunctionName)
-          return this.lambda.updateFunctionCodeAsyncB({
-            FunctionName: this.config.lambda.FunctionName,
-            ZipFile: fs.readFileSync(file)
-          })
-        })
-      }, err => {
-        if (err.statusCode !== 404) {
-          throw err
-        }
-
-        logger.info(('create lambda %s').green, this.config.lambda.FunctionName)
-        const params = _.merge({
-          Runtime: 'nodejs',
-          Code: {
-            ZipFile: fs.readFileSync(file)
-          }
-        }, this.config.lambda)
-
-        return this.lambda.createFunctionAsyncB(params)
-      })
+      return this.lambda.getFunction({FunctionName: this.config.lambda.FunctionName}).promise()
     }, err => {
       logger.info((err.toString()).red)
       throw err
+    })
+    .then(lambda => {
+      logger.info(`found lambda ${lambda.Configuration.FunctionName}`)
+      logger.info(('update configuration for %s').yellow, lambda.Configuration.FunctionName)
+      return this.lambda.updateFunctionConfiguration(this.config.lambda).promise()
+      .then(() => {
+        logger.info(('update function code for %s').yellow, lambda.Configuration.FunctionName)
+        return this.lambda.updateFunctionCode({
+          FunctionName: this.config.lambda.FunctionName,
+          ZipFile: fs.readFileSync(file)
+        }).promise()
+      })
+    }, err => {
+      if (err.statusCode !== 404) {
+        throw err
+      }
+
+      logger.info(('create lambda %s').green, this.config.lambda.FunctionName)
+      const params = _.merge({
+        Runtime: 'nodejs',
+        Code: {
+          ZipFile: fs.readFileSync(file)
+        }
+      }, this.config.lambda)
+
+      return this.lambda.createFunction(params).promise()
     })
   }
 
   addLambdaPermission () {
     debug('updateLambdaPermission called')
 
-    return this.lambda.getFunctionAsyncB({
-      FunctionName: this.config.lambda.FunctionName
-    })
+    return this.lambda.getFunction({FunctionName: this.config.lambda.FunctionName}).promise()
     .then(lambda => {
       logger.info(`found lambda ${lambda.Configuration.FunctionName} ${lambda.Configuration.FunctionArn}`)
       const accountId = lambda.Configuration.FunctionArn.split(':')[4]
-      return this.lambda.removePermissionAsyncB({
+      return this.lambda.removePermission({
         FunctionName: this.config.lambda.FunctionName,
         StatementId: 'ExecuteFromApiGateway'
-      })
+      }).promise()
       .catch(() => {})
-      .then(() => this.lambda.addPermissionAsyncB({
+      .then(() => this.lambda.addPermission({
         FunctionName: this.config.lambda.FunctionName,
         Principal: 'apigateway.amazonaws.com',
         StatementId: 'ExecuteFromApiGateway',
         Action: 'lambda:InvokeFunction',
         SourceArn: `arn:aws:execute-api:${this.lambda.config.region}:${accountId}:*`
-      }))
+      }).promise())
     }, err => {
       logger.info((err.toString()).red)
       throw err

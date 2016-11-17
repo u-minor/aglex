@@ -1,14 +1,11 @@
 import { _, AWS, expect, sinon } from './helper'
 
-import Promise from 'bluebird'
 import AglexLib from '../src/lib/aglexLib'
 const apiGateway = sinon.stub()
 AglexLib.__Rewire__('AWS', AWS)
 AglexLib.__Rewire__('apiGateway', apiGateway)
 AglexLib.__Rewire__('util', {
-  normalizeMethods: () => {},
-  normalizeRequestTemplates: () => {},
-  normalizeResources: (res) => { res['/'] = {} }
+  normalizeApiDefinition: () => {}
 })
 
 describe('aglexLib', () => {
@@ -21,16 +18,19 @@ describe('aglexLib', () => {
       FunctionName: 'testLambda'
     },
     apiGateway: {
-      name: 'testApi',
-      description: 'desc',
-      resources: {}
+      info: {
+        title: 'testApi',
+        description: 'desc'
+      },
+      paths: {}
     }
   }
   const apiObj = {
     id: '123abc',
-    name: 'test',
+    name: 'testApi',
     createDeployment: () => Promise.resolve({}),
-    stages: () => Promise.resolve([])
+    stages: () => Promise.resolve([]),
+    update: () => Promise.resolve(apiObj)
   }
 
   before(() => {
@@ -102,8 +102,9 @@ describe('aglexLib', () => {
     })
 
     it('should return a promise object', () => {
-      sb.stub(AWS._stub_.Lambda, 'getFunctionAsyncB')
-        .returns(new Promise(() => {}))
+      sb.stub(AWS._stub_.Lambda, 'getFunction').returns({
+        promise: () => new Promise(() => {})
+      })
 
       const ret = aglexLib.addLambdaPermission()
 
@@ -111,17 +112,41 @@ describe('aglexLib', () => {
     })
 
     it('should resolve with a valid object', () => {
-      sb.stub(AWS._stub_.Lambda, 'getFunctionAsyncB')
-        .resolves({
+      sb.stub(AWS._stub_.Lambda, 'getFunction').returns({
+        promise: () => Promise.resolve({
           Configuration: {
             FunctionArn: 'arn:aws:lambda:local:12345:function:testLambda',
             FunctionName: 'testLambda'
           }
         })
-      sb.stub(AWS._stub_.Lambda, 'removePermissionAsyncB')
-        .resolves()
-      sb.stub(AWS._stub_.Lambda, 'addPermissionAsyncB')
-        .resolves({Statement: ''})
+      })
+      sb.stub(AWS._stub_.Lambda, 'removePermission').returns({
+        promise: () => Promise.resolve()
+      })
+      sb.stub(AWS._stub_.Lambda, 'addPermission').returns({
+        promise: () => Promise.resolve({Statement: ''})
+      })
+
+      const ret = aglexLib.addLambdaPermission()
+
+      return expect(ret).to.become({Statement: ''})
+    })
+
+    it('should resolve with a valid object even when removePermission failed', () => {
+      sb.stub(AWS._stub_.Lambda, 'getFunction').returns({
+        promise: () => Promise.resolve({
+          Configuration: {
+            FunctionArn: 'arn:aws:lambda:local:12345:function:testLambda',
+            FunctionName: 'testLambda'
+          }
+        })
+      })
+      sb.stub(AWS._stub_.Lambda, 'removePermission').returns({
+        promise: () => Promise.reject()
+      })
+      sb.stub(AWS._stub_.Lambda, 'addPermission').returns({
+        promise: () => Promise.resolve({Statement: ''})
+      })
 
       const ret = aglexLib.addLambdaPermission()
 
@@ -129,539 +154,13 @@ describe('aglexLib', () => {
     })
 
     it('should reject if lambda not found', () => {
-      sb.stub(AWS._stub_.Lambda, 'getFunctionAsyncB')
-        .rejects(new Error('Function not found'))
+      sb.stub(AWS._stub_.Lambda, 'getFunction').returns({
+        promise: () => Promise.reject(new Error('Function not found'))
+      })
 
       const ret = aglexLib.addLambdaPermission()
 
       return expect(ret).to.rejectedWith('Function not found')
-    })
-  })
-
-  describe('checkIntegration', () => {
-    const sb = sinon.sandbox.create()
-
-    before(() => {
-      apiGateway.returns({RestApi: stub})
-      aglexLib = AglexLib(conf, 'none')
-    })
-
-    after(() => {
-      apiGateway.reset()
-    })
-
-    afterEach(() => {
-      sb.restore()
-    })
-
-    it('should be a function', () => {
-      expect(aglexLib.checkIntegration).to.be.a('function')
-    })
-
-    it('should return a promise object', () => {
-      sb.stub(aglexLib, 'checkIntegrationRequest')
-        .resolves()
-      sb.stub(aglexLib, 'checkMethodResponses')
-        .resolves()
-      sb.stub(aglexLib, 'checkIntegrationResponses')
-        .resolves()
-
-      const ret = aglexLib.checkIntegration({
-        httpMethod: 'GET',
-        _resource: {
-          path: '/dummy'
-        }
-      })
-
-      expect(ret).to.be.an.instanceof(Promise)
-    })
-  })
-
-  describe('checkIntegrationRequest', () => {
-    before(() => {
-      conf.apiGateway.resources['/dummy'] = {GET: {request: {type: 'Lambda'}}}
-      apiGateway.returns({RestApi: stub})
-      aglexLib = AglexLib(conf, 'none')
-    })
-
-    after(() => {
-      apiGateway.reset()
-      conf.apiGateway.resources = {}
-    })
-
-    it('should be a function', () => {
-      expect(aglexLib.checkIntegrationRequest).to.be.a('function')
-    })
-
-    it('should create a new integration if not found', () => {
-      const ret = aglexLib.checkIntegrationRequest({
-        httpMethod: 'GET',
-        createIntegration: () => Promise.resolve(),
-        _resource: {
-          path: '/dummy'
-        }
-      })
-
-      expect(ret).to.be.an.instanceof(Promise)
-    })
-
-    it('should update a current integration if changed', () => {
-      const ret = aglexLib.checkIntegrationRequest({
-        httpMethod: 'GET',
-        methodIntegration: {type: 'MOCK'},
-        updateIntegration: () => Promise.resolve(),
-        _resource: {
-          path: '/dummy'
-        }
-      })
-
-      expect(ret).to.be.an.instanceof(Promise)
-    })
-
-    it('should do nothing if not changed', () => {
-      const ret = aglexLib.checkIntegrationRequest({
-        httpMethod: 'GET',
-        methodIntegration: {type: 'Lambda'},
-        _resource: {
-          path: '/dummy'
-        }
-      })
-
-      expect(ret).to.be.an.instanceof(Promise)
-    })
-  })
-
-  describe('checkIntegrationResponses', () => {
-    before(() => {
-      conf.apiGateway.resources['/dummy'] = {GET: {
-        request: {type: 'Lambda'},
-        responses: {
-          200: {
-            responseHeaders: {
-              'X-Test-Header': "'test value'"
-            }
-          }
-        }
-      }}
-      apiGateway.returns({RestApi: stub})
-      aglexLib = AglexLib(conf, 'none')
-    })
-
-    after(() => {
-      apiGateway.reset()
-      conf.apiGateway.resources = {}
-    })
-
-    it('should be a function', () => {
-      expect(aglexLib.checkIntegrationResponses).to.be.a('function')
-    })
-
-    it('should create a new integration response if not found', () => {
-      const ret = aglexLib.checkIntegrationResponses({
-        createIntegrationResponse: () => Promise.resolve(),
-        _method: {
-          httpMethod: 'GET',
-          _resource: {
-            path: '/dummy'
-          }
-        }
-      })
-
-      expect(ret).to.be.an.instanceof(Promise)
-    })
-
-    it('should update a current integration response if changed', () => {
-      const ret = aglexLib.checkIntegrationResponses({
-        integrationResponses: {
-          200: {
-            responseParameters: {
-              'method.response.header.X-Test-Header': "'old value'"
-            },
-            update: () => Promise.resolve()
-          }
-        },
-        _method: {
-          httpMethod: 'GET',
-          _resource: {
-            path: '/dummy'
-          }
-        }
-      })
-
-      expect(ret).to.be.an.instanceof(Promise)
-    })
-
-    it('should do nothing if integration not changed', () => {
-      const ret = aglexLib.checkIntegrationResponses({
-        integrationResponses: {
-          200: {
-            responseParameters: {
-              'method.response.header.X-Test-Header': "'test value'"
-            },
-            responseTemplates: {'application/json': ''}
-          }
-        },
-        _method: {
-          httpMethod: 'GET',
-          _resource: {
-            path: '/dummy'
-          }
-        }
-      })
-
-      expect(ret).to.be.an.instanceof(Promise)
-    })
-  })
-
-  describe('checkMethodResponses', () => {
-    const sb = sinon.sandbox.create()
-
-    before(() => {
-      conf.apiGateway.resources['/dummy'] = {GET: {
-        responses: {
-          200: {
-            responseHeaders: {
-              'X-Test-Header': "'test value'"
-            }
-          }
-        }
-      }}
-      apiGateway.returns({RestApi: stub})
-      aglexLib = AglexLib(conf, 'none')
-    })
-
-    after(() => {
-      apiGateway.reset()
-      conf.apiGateway.resources = {}
-    })
-
-    afterEach(() => {
-      sb.restore()
-    })
-
-    it('should be a function', () => {
-      expect(aglexLib.checkMethodResponses).to.be.a('function')
-    })
-
-    it('should return a promise object', () => {
-      const ret = aglexLib.checkMethodResponses({
-        createMethodResponse: () => Promise.resolve(),
-        httpMethod: 'GET',
-        methodResponses: {},
-        _resource: {
-          path: '/dummy'
-        }
-      })
-
-      expect(ret).to.be.an.instanceof(Promise)
-    })
-
-    it('should delete unused method response', () => {
-      const func = sinon.stub().resolves()
-      const ret = aglexLib.checkMethodResponses({
-        createMethodResponse: () => Promise.resolve(),
-        httpMethod: 'GET',
-        methodResponses: {
-          500: {
-            delete: func
-          }
-        },
-        _resource: {
-          path: '/dummy'
-        }
-      })
-
-      return ret.then(() => {
-        expect(func).to.have.been.calledOnce
-      })
-    })
-
-    it('should update method response', () => {
-      const func = sinon.stub().resolves()
-      const ret = aglexLib.checkMethodResponses({
-        httpMethod: 'GET',
-        methodResponses: {
-          200: {
-            update: func
-          }
-        },
-        _resource: {
-          path: '/dummy'
-        }
-      })
-
-      return ret.then(() => {
-        expect(func).to.have.been.calledOnce
-      })
-    })
-
-    it('should create new method response', () => {
-      const func = sb.stub(aglexLib, 'createMethodResponses')
-        .resolves()
-      const ret = aglexLib.checkMethodResponses({
-        httpMethod: 'GET',
-        _resource: {
-          path: '/dummy'
-        }
-      })
-
-      return ret.then(() => {
-        expect(func).to.have.been.calledOnce
-      })
-    })
-  })
-
-  describe('checkMethods', () => {
-    const sb = sinon.sandbox.create()
-
-    before(() => {
-      apiGateway.returns({RestApi: stub})
-      aglexLib = AglexLib(conf, 'none')
-    })
-
-    after(() => {
-      apiGateway.reset()
-    })
-
-    afterEach(() => {
-      sb.restore()
-    })
-
-    it('should be a function', () => {
-      expect(aglexLib.checkMethods).to.be.a('function')
-    })
-
-    it('should return a promise object', () => {
-      const ret = aglexLib.checkMethods({
-        methods: () => new Promise(() => {})
-      })
-
-      expect(ret).to.be.an.instanceof(Promise)
-    })
-
-    it('should call deleteMethods, createMethods, checkIntegration', () => {
-      const func1 = sb.stub(aglexLib, 'deleteMethods')
-        .resolves([{}])
-      const func2 = sb.stub(aglexLib, 'createMethods')
-        .resolves([{}, {}])
-      const func3 = sb.stub(aglexLib, 'checkIntegration')
-        .resolves()
-
-      return aglexLib.checkMethods({
-        methods: () => Promise.resolve([])
-      })
-      .then(() => {
-        expect(func1).to.have.been.calledOnce
-        expect(func2).to.have.been.calledOnce
-        expect(func3).to.have.been.calledTwice
-      })
-    })
-  })
-
-  describe('checkResources', () => {
-    before(() => {
-      apiGateway.returns({RestApi: stub})
-    })
-
-    after(() => {
-      apiGateway.reset()
-    })
-
-    beforeEach(() => {
-      aglexLib = AglexLib(conf, 'none')
-    })
-
-    afterEach(() => {
-      conf.apiGateway.resources = {}
-    })
-
-    it('should be a function', () => {
-      expect(aglexLib.checkResources).to.be.a('function')
-    })
-
-    it('should return a promise object', () => {
-      const ret = aglexLib.checkResources({
-        resources: () => new Promise(() => {})
-      })
-
-      expect(ret).to.be.an.instanceof(Promise)
-    })
-
-    it('should resolve with a valid object', () => {
-      const ret = aglexLib.checkResources({
-        resources: () => Promise.resolve([
-          {id: '12345abcde', path: '/'}
-        ])
-      })
-
-      return expect(ret).to.become([{id: '12345abcde', path: '/'}])
-    })
-
-    it('should delete unused resources', () => {
-      const res = sinon.stub()
-      res
-        .onFirstCall().resolves([
-          {id: '12345abcde', path: '/'},
-          {id: '67890eghij', path: '/dummy', delete: () => {}}
-        ])
-        .onSecondCall().resolves([
-          {id: '12345abcde', path: '/'}
-        ])
-      const ret = aglexLib.checkResources({resources: res})
-
-      return expect(ret).to.become([{id: '12345abcde', path: '/'}])
-    })
-
-    it('should create new resources', () => {
-      conf.apiGateway.resources['/dummy'] = [ 'GET' ]
-      const res = sinon.stub()
-      res
-        .onFirstCall().resolves([
-          {id: '12345abcde', path: '/'}
-        ])
-        .onSecondCall().resolves([
-          {id: '12345abcde', path: '/'},
-          {id: '67890eghij', path: '/dummy'}
-        ])
-      const ret = aglexLib.checkResources({
-        createResource: () => Promise.resolve({}),
-        resources: res
-      })
-
-      return expect(ret).to.become([
-        {id: '12345abcde', path: '/'},
-        {id: '67890eghij', path: '/dummy'}
-      ])
-    })
-  })
-
-  describe('createMethodResponses', () => {
-    const sb = sinon.sandbox.create()
-
-    before(() => {
-      conf.apiGateway.resources['/dummy'] = {GET: {
-        responses: {
-          200: {
-            responseHeaders: {
-              'X-Test-Header': "'test value'"
-            }
-          }
-        }
-      }}
-      apiGateway.returns({RestApi: stub})
-      aglexLib = AglexLib(conf, 'none')
-    })
-
-    after(() => {
-      apiGateway.reset()
-      conf.apiGateway.resources = {}
-    })
-
-    afterEach(() => {
-      sb.restore()
-    })
-
-    it('should be a function', () => {
-      expect(aglexLib.createMethodResponses).to.be.a('function')
-    })
-
-    it('should return a promise object', () => {
-      const ret = aglexLib.createMethodResponses({
-        createMethodResponse: () => Promise.resolve(),
-        httpMethod: 'GET',
-        _resource: {
-          path: '/dummy'
-        }
-      })
-
-      expect(ret).to.be.an.instanceof(Promise)
-    })
-  })
-
-  describe('createMethods', () => {
-    const sb = sinon.sandbox.create()
-
-    before(() => {
-      apiGateway.returns({RestApi: stub})
-    })
-
-    after(() => {
-      apiGateway.reset()
-    })
-
-    beforeEach(() => {
-      aglexLib = AglexLib(conf, 'none')
-    })
-
-    afterEach(() => {
-      conf.apiGateway.resources = {}
-      sb.restore()
-    })
-
-    it('should be a function', () => {
-      expect(aglexLib.createMethods).to.be.a('function')
-    })
-
-    it('should return a promise object', () => {
-      const ret = aglexLib.createMethods({}, [])
-
-      expect(ret).to.be.an.instanceof(Promise)
-    })
-
-    it('should create new methods', () => {
-      conf.apiGateway.resources['/dummy'] = {GET: {}}
-      const func = sinon.stub().resolves({})
-      const ret = aglexLib.createMethods({
-        createMethod: func,
-        path: '/dummy'
-      }, [])
-
-      expect(ret).to.become([{}])
-      return ret.then(() => {
-        expect(func).to.have.been.calledOnce
-      })
-    })
-  })
-
-  describe('deleteMethods', () => {
-    before(() => {
-      apiGateway.returns({RestApi: stub})
-    })
-
-    after(() => {
-      apiGateway.reset()
-    })
-
-    beforeEach(() => {
-      aglexLib = AglexLib(conf, 'none')
-    })
-
-    afterEach(() => {
-      conf.apiGateway.resources = {}
-    })
-
-    it('should be a function', () => {
-      expect(aglexLib.deleteMethods).to.be.a('function')
-    })
-
-    it('should return a promise object', () => {
-      const ret = aglexLib.deleteMethods({}, [])
-
-      expect(ret).to.be.an.instanceof(Promise)
-    })
-
-    it('should delete unused methods', () => {
-      conf.apiGateway.resources['/dummy'] = {GET: {}}
-      const func = sinon.stub().resolves()
-      const ret = aglexLib.deleteMethods({path: '/dummy'}, [
-        {httpMethod: 'GET', delete: func},
-        {httpMethod: 'POST', delete: func}
-      ])
-
-      expect(ret).to.become([{httpMethod: 'GET', delete: func}])
-      return ret.then(() => {
-        expect(func).to.have.been.calledOnce
-      })
     })
   })
 
@@ -690,7 +189,7 @@ describe('aglexLib', () => {
 
     it('should resolve with a valid object', () => {
       stub.findByName = sinon.stub()
-        .withArgs('test')
+        .withArgs('testApi')
         .resolves(apiObj)
 
       const ret = aglexLib.deployApi('desc', 'stage', 'stage desc')
@@ -700,16 +199,25 @@ describe('aglexLib', () => {
 
     it('should resolve with a new api object', () => {
       stub.findByName = sinon.stub()
-        .withArgs('test')
+        .withArgs('testApi')
         .resolves(null)
 
       const ret = aglexLib.deployApi('desc', 'stage', 'stage desc')
 
       return expect(ret).to.rejectedWith(Error)
     })
+
+    it('should throw error if API failed', () => {
+      stub.findByName = sinon.stub()
+        .rejects({})
+
+      const ret = aglexLib.deployApi('desc', 'stage', 'stage desc')
+
+      return expect(ret).to.rejectedWith({})
+    })
   })
 
-  describe('getApi', () => {
+  describe('updateApi', () => {
     before(() => {
       apiGateway.returns({RestApi: stub})
       aglexLib = AglexLib(conf, 'none')
@@ -720,14 +228,14 @@ describe('aglexLib', () => {
     })
 
     it('should be a function', () => {
-      expect(aglexLib.getApi).to.be.a('function')
+      expect(aglexLib.updateApi).to.be.a('function')
     })
 
     it('should return a promise object', () => {
       stub.findByName = sinon.stub()
         .returns(new Promise(() => {}))
 
-      const ret = aglexLib.getApi()
+      const ret = aglexLib.updateApi()
 
       expect(ret).to.be.an.instanceof(Promise)
     })
@@ -737,7 +245,7 @@ describe('aglexLib', () => {
         .withArgs('test')
         .resolves(apiObj)
 
-      const ret = aglexLib.getApi()
+      const ret = aglexLib.updateApi()
 
       return expect(ret).to.become(apiObj)
     })
@@ -750,9 +258,18 @@ describe('aglexLib', () => {
         .withArgs(conf.apiGateway)
         .resolves(apiObj)
 
-      const ret = aglexLib.getApi()
+      const ret = aglexLib.updateApi()
 
       return expect(ret).to.become(apiObj)
+    })
+
+    it('should throw error if API failed', () => {
+      stub.findByName = sinon.stub()
+        .rejects({})
+
+      const ret = aglexLib.updateApi()
+
+      return expect(ret).to.rejectedWith({})
     })
   })
 
@@ -798,6 +315,15 @@ describe('aglexLib', () => {
 
       return expect(ret).to.rejectedWith(Error)
     })
+
+    it('should throw error if API failed', () => {
+      stub.findByName = sinon.stub()
+        .rejects({})
+
+      const ret = aglexLib.getApiStages()
+
+      return expect(ret).to.rejectedWith({})
+    })
   })
 
   describe('getLambda', () => {
@@ -821,8 +347,9 @@ describe('aglexLib', () => {
     })
 
     it('should return a promise object', () => {
-      sb.stub(AWS._stub_.Lambda, 'getFunctionAsyncB')
-        .returns(new Promise(() => {}))
+      sb.stub(AWS._stub_.Lambda, 'getFunction').returns({
+        promise: () => new Promise(() => {})
+      })
 
       const ret = aglexLib.getLambda()
 
@@ -830,13 +357,14 @@ describe('aglexLib', () => {
     })
 
     it('should resolve with a valid object', () => {
-      sb.stub(AWS._stub_.Lambda, 'getFunctionAsyncB')
-        .returns(Promise.resolve({
+      sb.stub(AWS._stub_.Lambda, 'getFunction').returns({
+        promise: () => Promise.resolve({
           Configuration: {
             FunctionArn: 'arn:aws:lambda:local:12345:function:testLambda',
             FunctionName: 'testLambda'
           }
-        }))
+        })
+      })
 
       const ret = aglexLib.getLambda()
 
@@ -849,8 +377,9 @@ describe('aglexLib', () => {
     })
 
     it('should reject if lambda not found', () => {
-      sb.stub(AWS._stub_.Lambda, 'getFunctionAsyncB')
-        .returns(Promise.reject(new Error('Function not found')))
+      sb.stub(AWS._stub_.Lambda, 'getFunction').returns({
+        promise: () => Promise.reject(new Error('Function not found'))
+      })
 
       const ret = aglexLib.getLambda()
 
@@ -881,8 +410,8 @@ describe('aglexLib', () => {
     })
 
     it('should return a promise object', () => {
-      sb.stub(AWS._stub_.IAM, 'getRoleAsync')
-        .returns(new Promise(() => {}))
+      sb.stub(AWS._stub_.IAM, 'getRole')
+        .returns({promise: () => new Promise(() => {})})
 
       const ret = aglexLib.updateLambda('file')
 
@@ -890,23 +419,29 @@ describe('aglexLib', () => {
     })
 
     it('should resolve with a current lambda object', () => {
-      sb.stub(AWS._stub_.IAM, 'getRoleAsync')
-        .resolves({
+      sb.stub(AWS._stub_.IAM, 'getRole').returns({
+        promise: () => Promise.resolve({
           Role: {
             Arn: 'arn:aws:iam::12345:role/test_role'
           }
         })
-      sb.stub(AWS._stub_.Lambda, 'getFunctionAsyncB')
-        .resolves({
+      })
+      sb.stub(AWS._stub_.Lambda, 'getFunction').returns({
+        promise: () => Promise.resolve({
           Configuration: {
             FunctionArn: 'arn:aws:lambda:local:12345:function:testLambda',
             FunctionName: 'testLambda'
           }
         })
-      sb.stub(AWS._stub_.Lambda, 'updateFunctionConfigurationAsyncB')
-        .resolves()
-      sb.stub(AWS._stub_.Lambda, 'updateFunctionCodeAsyncB')
-        .resolves({FunctionName: 'testLambda'})
+      })
+      sb.stub(AWS._stub_.Lambda, 'updateFunctionConfiguration').returns({
+        promise: () => Promise.resolve()
+      })
+      sb.stub(AWS._stub_.Lambda, 'updateFunctionCode').returns({
+        promise: () => Promise.resolve({
+          FunctionName: 'testLambda'
+        })
+      })
 
       const ret = aglexLib.updateLambda('file')
 
@@ -914,20 +449,50 @@ describe('aglexLib', () => {
     })
 
     it('should resolve with a new lambda object', () => {
-      sb.stub(AWS._stub_.IAM, 'getRoleAsync')
-        .returns(Promise.resolve({
+      sb.stub(AWS._stub_.IAM, 'getRole').returns({
+        promise: () => Promise.resolve({
           Role: {
             Arn: 'arn:aws:iam::12345:role/test_role'
           }
-        }))
-      sb.stub(AWS._stub_.Lambda, 'getFunctionAsyncB')
-        .returns(Promise.reject({statusCode: 404}))
-      sb.stub(AWS._stub_.Lambda, 'createFunctionAsyncB')
-        .returns(Promise.resolve({FunctionName: 'testLambda'}))
+        })
+      })
+      sb.stub(AWS._stub_.Lambda, 'getFunction').returns({
+        promise: () => Promise.reject({statusCode: 404})
+      })
+      sb.stub(AWS._stub_.Lambda, 'createFunction').returns({
+        promise: () => Promise.resolve({FunctionName: 'testLambda'})
+      })
 
       const ret = aglexLib.updateLambda('file')
 
       return expect(ret).to.become({FunctionName: 'testLambda'})
+    })
+
+    it('should throw error if getRole failed', () => {
+      sb.stub(AWS._stub_.IAM, 'getRole').returns({
+        promise: () => Promise.reject({})
+      })
+
+      const ret = aglexLib.updateLambda('file')
+
+      return expect(ret).to.rejectedWith({})
+    })
+
+    it('should throw error if getFunction failed', () => {
+      sb.stub(AWS._stub_.IAM, 'getRole').returns({
+        promise: () => Promise.resolve({
+          Role: {
+            Arn: 'arn:aws:iam::12345:role/test_role'
+          }
+        })
+      })
+      sb.stub(AWS._stub_.Lambda, 'getFunction').returns({
+        promise: () => Promise.reject({statusCode: 500})
+      })
+
+      const ret = aglexLib.updateLambda('file')
+
+      return expect(ret).to.rejectedWith({statusCode: 500})
     })
   })
 })
