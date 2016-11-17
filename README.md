@@ -13,6 +13,9 @@ Aglex is a support tool for building serverless web applications using [Amazon A
 [Express] is the most famous web framework for [Node.js].
 Now you can use the same way to develop your API Gateway-Lambda web app.
 
+**UPDATE**: now 2.x uses [aws-serverless-express] and new config yaml.
+
+
 ## Installation
 
 Global install
@@ -27,11 +30,12 @@ or install and add to current package.
 $ npm install aglex --save-dev
 ```
 
+
 ## Features
 
 Aglex is not a web framework, just a small CLI tool which provides following features.
 
-- Generate a small handler code for lambda which fake http request object and launch express app
+- Generate a small lambda handler code
 - Create, update lambda function
 - Add execute-api permission to the function
 - Create, update and deploy API
@@ -82,30 +86,22 @@ Aglex is not a web framework, just a small CLI tool which provides following fea
 
    ## API Gateway configuration
    apiGateway:
-  -  name: YOUR_API_NAME
-  -  description: YOUR_API_DESCRIPTION
-  +  name: myapp
-  +  description: myapp
-
-     ## Method template definitions for each httpMethod
-     methodDefinitions:
-  @@ -51,10 +51,5 @@
-
-     ## API resources
-     resources:
-  -    /path/to/static/endpoint:
-  +    /users:
-         - GET
-  -    /path/to/dynamic/endpoint/{param}:
-  -      - GET
-  -      - PUT
-  -      - OPTIONS
+     swagger: 2.0
+     info:
+  -    title: YOUR_API_NAME
+  -    description: YOUR_API_DESCRIPTION
+  +    title: myapp
+  +    description: myapp
+     basePath: /prod
+     schemes:
+       - https
   ```
 
-4. Generate small lambda handler code
+4. Generate lambda handler code and install [aws-serverless-express]
 
   ```bash
   $ aglex generate lambda-handler > lambda.js
+  $ npm install -S aws-serverless-express
   ```
 
 5. Create lambda zip
@@ -146,7 +142,7 @@ For more information, please see wiki docs.
 
 ## See Also
 
- * [aws-serverless-express](https://github.com/awslabs/aws-serverless-express) is developed by AWS to make it easy to run Express apps on Lambda.
+ * [aws-serverless-express] is developed by AWS to make it easy to run Express apps on Lambda.
 
 [aglex-img]: https://raw.githubusercontent.com/u-minor/aglex/master/logo.png
 [npm-img]: https://img.shields.io/npm/v/aglex.svg
@@ -163,3 +159,4 @@ For more information, please see wiki docs.
 [AWS Lambda]: https://aws.amazon.com/lambda/
 [Express]: http://expressjs.com/
 [Node.js]: https://nodejs.org/
+[aws-serverless-express]: https://github.com/awslabs/aws-serverless-express

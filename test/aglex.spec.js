@@ -1,6 +1,5 @@
 import { expect, sinon } from './helper'
 
-import Promise from 'bluebird'
 import Aglex from '../src/lib/aglex'
 
 const lib = sinon.stub()
@@ -106,14 +105,7 @@ describe('aglex', () => {
       const ret = aglex.generateLambdaHandler()
 
       expect(ret).to.be.a('string')
-      expect(ret).to.contain('exports.handler = function(event, context) {')
-    })
-
-    it('should return a handler coffee script when param is provided', () => {
-      const ret = aglex.generateLambdaHandler(true)
-
-      expect(ret).to.be.a('string')
-      expect(ret).to.contain('exports.handler = (event, context) ->')
+      expect(ret).to.contain('exports.handler = (event, context) =>')
     })
   })
 
@@ -159,9 +151,7 @@ describe('aglex', () => {
 
     before(() => {
       lib.returns({
-        checkMethods: sinon.stub().resolves(null),
-        checkResources: sinon.stub().resolves(['res1', 'res2']),
-        getApi: sinon.stub().resolves({}),
+        updateApi: sinon.stub().resolves({}),
         getLambda: sinon.stub().resolves()
       })
     })
@@ -185,7 +175,7 @@ describe('aglex', () => {
       const ret = aglex.updateApi()
 
       expect(ret).to.be.an.instanceof(Promise)
-      return expect(ret).to.become(null)
+      return expect(ret).to.become({})
     })
   })
 

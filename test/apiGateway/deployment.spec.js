@@ -1,4 +1,4 @@
-import { AWS, Promise, expect, sinon } from '../helper'
+import { AWS, expect, sinon } from '../helper'
 import * as lib from '../../src/lib/apiGateway/deployment'
 
 describe('deployment', () => {
@@ -31,8 +31,10 @@ describe('deployment', () => {
 
   describe('Deployment.create', () => {
     it('should return promise object', () => {
-      sb.stub(apiGateway, 'createDeploymentAsync')
-        .resolves()
+      sb.stub(apiGateway, 'createDeployment').returns({
+        promise: () => Promise.resolve()
+      })
+
       const ret = Deployment.create(restApi, {
         id: '123abc',
         createdDate: 'Fri, 01 Jan 2016 00:00:00 GMT'
@@ -42,11 +44,13 @@ describe('deployment', () => {
     })
 
     it('should resolve with new Deployment object', () => {
-      sb.stub(apiGateway, 'createDeploymentAsync')
-        .resolves({
+      sb.stub(apiGateway, 'createDeployment').returns({
+        promise: () => Promise.resolve({
           id: '123abc',
           createdDate: 'Fri, 01 Jan 2016 00:00:00 GMT'
         })
+      })
+
       const ret = Deployment.create(restApi, {
         id: '123abc',
         createdDate: 'Fri, 01 Jan 2016 00:00:00 GMT'
